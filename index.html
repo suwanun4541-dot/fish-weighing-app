@@ -523,24 +523,20 @@
                 <table className="fw-print-table">
                   <thead>
                     <tr>
-                      <th style={{ width: '10%' }}>ใบชั่งที่</th>
-                      <th>บ่อ/กระชัง</th>
-                      <th>รุ่น</th>
-                      <th>รถ / ทะเบียน</th>
-                      <th>ถัง (กก.)</th>
-                      <th style={{ width: '15%' }}>นน.สุทธิ (กก.)</th>
-                      <th style={{ width: '12%' }}>ไซส์ (กรัม)</th>
-                      <th style={{ width: '16%' }}>จำนวนตัว</th>
+                      <th style={{ width: '9%' }}>ใบชั่งที่</th>
+                      <th style={{ width: '11%' }}>บ่อ/กระชัง</th>
+                      <th style={{ width: '8%' }}>รุ่น</th>
+                      <th style={{ width: '13%' }}>รถ / ทะเบียน</th>
+                      <th style={{ width: '24%' }}>ถัง (กก.)</th>
+                      <th style={{ width: '12%' }}>สุทธิ(กก.)</th>
+                      <th style={{ width: '10%' }}>ไซส์</th>
+                      <th style={{ width: '13%' }}>จำนวนตัว</th>
                     </tr>
                   </thead>
                   <tbody>
                     {viewReport.sets.map((s, i) => {
-                      // จัดกลุ่มตัวเลขน้ำหนักถังทีละ 2 ค่าให้แสดงในบรรทัดเดียวกัน
                       const validBuckets = (s.buckets || []).filter(b => num(b.weight) > 0).map(b => b.weight);
-                      const bucketChunks = [];
-                      for (let j = 0; j < validBuckets.length; j += 2) {
-                        bucketChunks.push(validBuckets.slice(j, j + 2).join(', '));
-                      }
+                      const bucketsText = validBuckets.join(', ');
 
                       return (
                         <tr key={i}>
@@ -549,15 +545,13 @@
                           <td>{s.batch || "-"}</td>
                           <td style={{ fontSize: 11 }}>{s.transportName || "-"} {s.plate ? <br/> : ''}{s.plate ? `(${s.plate})` : ''}</td>
                           
-                          {/* ปรับปรุงช่องแสดงจำนวนถังตรงนี้ครับ */}
-                          <td style={{ fontSize: 11, textAlign: 'center', verticalAlign: 'top', paddingTop: '8px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                              {bucketChunks.map((chunk, cIdx) => (
-                                <div key={cIdx}>{chunk}</div>
-                              ))}
-                              <div style={{ marginTop: '6px', fontWeight: 700, color: 'var(--teal-dark)', fontSize: '11.5px' }}>
-                                ({s.bucketCount} ถัง)
-                              </div>
+                          {/* ส่วนแสดงน้ำหนักถัง ปล่อยให้ข้อความเรียงตามธรรมชาติ และสรุปถังด้านล่าง */}
+                          <td style={{ fontSize: 11, textAlign: 'left', verticalAlign: 'top', paddingTop: '8px', paddingBottom: '8px' }}>
+                            <div style={{ lineHeight: '1.5', wordWrap: 'break-word', marginBottom: '6px' }}>
+                              {bucketsText}
+                            </div>
+                            <div style={{ fontWeight: 700, color: 'var(--teal-dark)', textAlign: 'center', background: 'var(--teal-pale)', padding: '2px 4px', borderRadius: '4px', display: 'inline-block', width: '100%' }}>
+                              รวม {s.bucketCount} ถัง
                             </div>
                           </td>
                           
@@ -571,7 +565,7 @@
                   <tfoot>
                     <tr style={{ background: '#E8F4DA', fontWeight: 700 }}>
                       <td colSpan="4" style={{ textAlign: 'right', color: '#0A443C' }}>รวมทั้งสิ้นที่เลือก:</td>
-                      <td style={{ color: '#0A443C' }}>{viewReport.totalBuckets} ถัง</td>
+                      <td style={{ color: '#0A443C', textAlign: 'center' }}>{viewReport.totalBuckets} ถัง</td>
                       <td style={{ color: '#0A443C', fontSize: 14 }}>{fmt(viewReport.totalNet)} กก.</td>
                       <td>-</td>
                       <td style={{ color: '#0A443C', fontSize: 14 }}>{fmt(viewReport.totalFish, 0)} ตัว</td>
@@ -605,6 +599,7 @@
             </div>
           )}
 
+          {/* Drawer: ประวัติการบันทึกทั้งหมด */}
           {showHistory && (
             <div className="fw-drawer-overlay" onClick={() => setShowHistory(false)}>
               <div className="fw-drawer" onClick={(e) => e.stopPropagation()}>
@@ -632,6 +627,7 @@
             </div>
           )}
 
+          {/* Drawer: สรุปยอดรวม (เรียงตามวัน พร้อม Checkbox) */}
           {showDaily && (
             <div className="fw-drawer-overlay" onClick={() => setShowDaily(false)}>
               <div className="fw-drawer" onClick={(e) => e.stopPropagation()}>
