@@ -48,11 +48,9 @@
     const IconArrowRight = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
     const IconArrowLeft = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
     
-    // ไอคอนสำหรับปุ่มหน้าแรก
     const IconFish = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.46-3.44 6-7 6-3.56 0-7.56-2.54-8.5-6Z"></path><path d="M18 12v.01"></path><path d="M11.5 10.5c-1 0-2 1-2 2s1 2 2 2"></path><path d="M6.5 12c-2.3 0-3.5-1-4.5-2C1 9 1 7 1 7s2 0 3 1c1 1 2.2 2 2.5 4Z"></path><path d="M6.5 12c-2.3 0-3.5 1-4.5 2C1 15 1 17 1 17s2 0 3-1c1-1 2.2-2 2.5-4Z"></path></svg>;
     const IconBook = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path><path d="M8 7h6"></path><path d="M8 11h8"></path></svg>;
 
-    // ระบบบันทึกข้อมูล
     const storage = {
       get: async (key) => ({ value: localStorage.getItem(key) }),
       set: async (key, value) => localStorage.setItem(key, value),
@@ -118,7 +116,6 @@
       return "ใบชั่งใหม่";
     };
 
-    // คอมโพเนนต์ลายเซ็นแบบจดจำสถานะ
     const SignaturePad = ({ label, value, onChange }) => {
       const canvasRef = useRef(null);
       const [isDrawing, setIsDrawing] = useState(false);
@@ -607,177 +604,13 @@
                   </button>
                 </div>
                 
-                {/* เปลี่ยนเป็นรูปภาพ Base64 ฝังในโค้ดเลย */}
+                {/* ดึงไฟล์รูปจากชื่อไฟล์ปกติ ป้องกันโค้ดบวมจนหน้าขาว */}
                 <div style={{ textAlign: 'center', borderBottom: '2px solid var(--teal-dark)', paddingBottom: 10 }}>
-                  <img src="data:image/jpeg;base64,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" />
-                </div>
-                
-                <table className="fw-print-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '8%' }}>ลำดับ</th>
-                      <th>บ่อ/กระชัง</th>
-                      <th>รุ่น</th>
-                      <th>รถ / ทะเบียน</th>
-                      <th>ถัง (กก.)</th>
-                      <th style={{ width: '15%' }}>นน.สุทธิ (กก.)</th>
-                      <th style={{ width: '14%' }}>ไซส์ (กรัม)</th>
-                      <th style={{ width: '16%' }}>จำนวนตัว</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {viewReport.sets.map((s, i) => (
-                      <tr key={i}>
-                        <td>{i + 1}</td>
-                        <td style={{ fontWeight: 600 }}>{s.pond || "-"}</td>
-                        <td>{s.batch || "-"}</td>
-                        <td style={{ fontSize: 11 }}>
-                          {s.transportName || "-"} {s.plate ? `(${s.plate})` : ''}
-                        </td>
-                        <td style={{ fontSize: 11, textAlign: 'left' }}>
-                          {(s.buckets || []).filter(b => num(b.weight) > 0).map(b => b.weight).join(', ')} ({s.bucketCount} ถัง)
-                        </td>
-                        <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{fmt(s.netKg)}</td>
-                        <td>{s.sizeGram ? fmt(s.sizeGram, 1) : '-'}</td>
-                        <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{fmt(s.fishCount, 0)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ background: 'var(--teal-pale)', fontWeight: 700 }}>
-                      <td colSpan="4" style={{ textAlign: 'right', color: 'var(--teal-dark)' }}>รวมทั้งสิ้น:</td>
-                      <td>{viewReport.totalBuckets} ถัง</td>
-                      <td style={{ color: 'var(--teal-dark)', fontSize: 14 }}>{fmt(viewReport.totalNet)} กก.</td>
-                      <td>-</td>
-                      <td style={{ color: 'var(--teal-dark)', fontSize: 14 }}>{fmt(viewReport.totalFish, 0)} ตัว</td>
-                    </tr>
-                  </tfoot>
-                </table>
-                {viewReport.note && (
-                  <div style={{ background: '#fafafa', border: '1px solid #eee', borderRadius: 6, padding: '8px 10px', fontSize: 12, marginTop: 10 }}>
-                    <strong>หมายเหตุ:</strong> {viewReport.note}
+                  <img src="farm-logo.jpg" alt="Boonchai Group Logo" style={{ height: '70px', objectFit: 'contain', marginBottom: '8px' }} />
+                  <h2 style={{ margin: 0, fontSize: 20, color: '#0A443C' }}>ใบสรุปรายการชั่งลูกปลา</h2>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 6, color: '#0E5C52' }}>
+                    วันที่: {viewReport.dateStr}
                   </div>
-                )}
-                <div className="fw-print-sigbox">
-                  <div>
-                    <div className="fw-print-sig-container">
-                      {viewReport.farmerSig && <img src={viewReport.farmerSig} className="fw-print-sig-img" />}
-                      <div className="fw-print-sigline"></div>
-                    </div>
-                    <div style={{ fontSize: 12.5, fontWeight: 600 }}>ลงชื่อ {viewReport.farmerSig ? '' : '....................................................'}</div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>( เกษตรกรผู้ส่งมอบ )</div>
-                  </div>
-                  <div>
-                    <div className="fw-print-sig-container">
-                      {viewReport.transportSig && <img src={viewReport.transportSig} className="fw-print-sig-img" />}
-                      <div className="fw-print-sigline"></div>
-                    </div>
-                    <div style={{ fontSize: 12.5, fontWeight: 600 }}>ลงชื่อ {viewReport.transportSig ? '' : '....................................................'}</div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>( พนักงานขับรถ / ขนส่ง )</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Drawer: ประวัติการบันทึกทั้งหมด */}
-          {showHistory && (
-            <div className="fw-drawer-overlay" onClick={() => setShowHistory(false)}>
-              <div className="fw-drawer" onClick={(e) => e.stopPropagation()}>
-                <div className="fw-drawer-head">
-                  <span style={{ fontWeight: 700, fontSize: 16 }}>ประวัติที่บันทึกไว้ทั้งหมด</span>
-                  <button className="fw-icon-btn" style={{ background: "var(--teal-pale)", color: "var(--teal-dark)" }} onClick={() => setShowHistory(false)}>
-                    <IconX size={18} />
-                  </button>
-                </div>
-                {records.length === 0 && <p style={{ color: "var(--ink-soft)", fontSize: 13.5 }}>ยังไม่มีบันทึกที่เก็บไว้</p>}
-                {records.map((r) => (
-                  <div className="fw-record-row" key={r.key}>
-                    <div onClick={() => loadRecord(r.key)} style={{ cursor: "pointer", flex: 1 }}>
-                      <div className="fw-record-label">{r.label}</div>
-                      <div className="fw-record-meta">{fmt(r.totalNetKg)} กก. สุทธิ · {fmt(r.totalFishCount, 0)} ตัว</div>
-                    </div>
-                    <div className="fw-record-btns">
-                      <button className="fw-icon-sm" onClick={() => deleteRecord(r.key)}><IconTrash2 size={15} /></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Drawer: สรุปยอดรวม (เรียงตามวัน) */}
-          {showDaily && (
-            <div className="fw-drawer-overlay" onClick={() => setShowDaily(false)}>
-              <div className="fw-drawer" onClick={(e) => e.stopPropagation()}>
-                <div className="fw-drawer-head">
-                  <span style={{ fontWeight: 700, fontSize: 16 }}>สรุปรายการย้อนหลังทั้งหมด</span>
-                  <button className="fw-icon-btn" style={{ background: "var(--teal-pale)", color: "var(--teal-dark)" }} onClick={() => setShowDaily(false)}>
-                    <IconX size={18} />
-                  </button>
-                </div>
-                {allGroupedByDate.length === 0 && <p style={{ color: "var(--ink-soft)", fontSize: 13.5 }}>ยังไม่มีข้อมูลใบชั่งที่บันทึกไว้</p>}
-                
-                {allGroupedByDate.map((group, idx) => (
-                  <div key={idx} style={{ marginBottom: 20, background: '#fff', border: '1px solid var(--border)', borderRadius: 12, padding: '12px' }}>
-                    <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--teal-dark)', borderBottom: '1.5px solid var(--teal-pale)', paddingBottom: 6, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>วันที่ {group.dateStr}</span>
-                      <button 
-                        onClick={() => setViewReport(group)}
-                        style={{ background: 'var(--teal-pale)', color: 'var(--teal-dark)', border: 'none', padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <IconPrinter size={13} /> ดูใบสรุป / พิมพ์
-                      </button>
-                    </div>
-                    {group.sets.map((row, i) => (
-                      <div className="fw-record-row" key={i}>
-                        <div>
-                          <div className="fw-record-label">บ่อ/กระชัง {row.pond || "-"}{row.batch ? " รุ่น " + row.batch : ""}</div>
-                          <div className="fw-record-meta">{row.transportName ? `รถ: ${row.transportName}` : ''} · {row.bucketCount} ถัง · {fmt(row.fishCount, 0)} ตัว</div>
-                        </div>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--teal-dark)' }}>{fmt(row.netKg)} กก.</div>
-                      </div>
-                    ))}
-                    {group.sets.length > 0 && (
-                      <div className="fw-record-row" style={{ borderBottom: "none", marginTop: 6, background: 'var(--teal-pale)', borderRadius: 8, padding: '8px 10px' }}>
-                        <div className="fw-record-label" style={{ color: 'var(--teal-dark)' }}>รวมทั้งวัน</div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontWeight: 700, fontSize: 15, color: "var(--teal-dark)" }}>{fmt(group.totalNet)} กก.</div>
-                          <div className="fw-record-meta" style={{ color: 'var(--teal-dark)' }}>{fmt(group.totalFish, 0)} ตัว</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ส่วนหัวกระดาษแอปพลิเคชัน */}
-          <div className="fw-header">
-            <div className="fw-header-top">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {mainTab !== 'home' && (
-                  <button onClick={() => setMainTab('home')} className="fw-icon-btn" style={{ marginRight: '4px' }}>
-                    <IconArrowLeft size={20} />
-                  </button>
-                )}
-                <div>
-                  <p className="fw-title">บันทึกการชั่งลูกปลา</p>
-                  <p className="fw-subtitle">บูรณ์ชัยกรุ๊ป</p>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                <button className="fw-icon-btn" onClick={() => setShowDaily(true)} aria-label="สรุป"><IconClipboardList size={17} /></button>
-                <button className="fw-icon-btn" onClick={() => setShowHistory(true)} aria-label="ประวัติ"><IconHistory size={17} /></button>
-              </div>
-            </div>
-          </div>
-
-          {/* หน้าหลัก (Home Screen) เปลี่ยนรูปเป็น Base64 แล้วครับ */}
-          {mainTab === 'home' && (
-            <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                <img src="data:image/jpeg;base64,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" alt="Boonchai Group Logo" style={{ width: '220px', maxWidth: '100%', height: 'auto', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }} />
                 </div>
 
                 <table className="fw-print-table">
@@ -941,11 +774,11 @@
             </div>
           </div>
 
-          {/* หน้าหลัก (Home Screen) เปลี่ยนรูปเป็น Base64 แล้วครับ */}
+          {/* หน้าหลัก (Home Screen) เปลี่ยนรูปเป็นไฟล์อ้างอิงปกติ */}
           {mainTab === 'home' && (
             <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                <img src="data:image/jpeg;base64,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" alt="Boonchai Group Logo" style={{ width: '220px', maxWidth: '100%', height: 'auto', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }} />
+                <img src="farm-logo.jpg" alt="Boonchai Group Logo" style={{ width: '220px', maxWidth: '100%', height: 'auto', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }} />
               </div>
               
               <button 
