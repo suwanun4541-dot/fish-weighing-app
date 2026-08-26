@@ -51,6 +51,7 @@
     const IconFish = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.46-3.44 6-7 6-3.56 0-7.56-2.54-8.5-6Z"></path><path d="M18 12v.01"></path><path d="M11.5 10.5c-1 0-2 1-2 2s1 2 2 2"></path><path d="M6.5 12c-2.3 0-3.5-1-4.5-2C1 9 1 7 1 7s2 0 3 1c1 1 2.2 2 2.5 4Z"></path><path d="M6.5 12c-2.3 0-3.5 1-4.5 2C1 15 1 17 1 17s2 0 3-1c1-1 2.2-2 2.5-4Z"></path></svg>;
     const IconBook = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path><path d="M8 7h6"></path><path d="M8 11h8"></path></svg>;
     const IconLock = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
+    const IconCheckSquare = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>;
 
     // -----------------------------------------------------------------------------
     // ⭐ นำ Web App URL ที่ได้จาก Google Apps Script มาใส่ในเครื่องหมายคำพูดด้านล่างนี้เลยครับ
@@ -173,6 +174,10 @@
       const [showHistory, setShowHistory] = useState(false);
       const [showDaily, setShowDaily] = useState(false);
       const [records, setRecords] = useState([]);
+      
+      // สถานะสำหรับเก็บรายการที่ถูกเลือกเพื่อใช้พิมพ์ (map: setId -> boolean)
+      const [selectedPrint, setSelectedPrint] = useState({});
+
       const [status, setStatus] = useState("");
       const [loaded, setLoaded] = useState(false);
       const [viewReport, setViewReport] = useState(null);
@@ -183,6 +188,27 @@
       const update = (patch) => setState((s) => ({ ...s, ...patch }));
       const updateFarm = (patch) => setState((s) => ({ ...s, farm: { ...s.farm, ...patch } }));
       const updateSample = (patch) => setState((s) => ({ ...s, sample: { ...s.sample, ...patch } }));
+
+      // อัปเดต selectedPrint ให้ค่าเริ่มต้นเป็น "เลือกทุกอัน" เสมอเมื่อโหลดประวัติใหม่
+      useEffect(() => {
+        const initialSelect = {};
+        records.forEach(r => {
+          (r.sets || []).forEach(s => {
+            initialSelect[s.id] = true;
+          });
+        });
+        setSelectedPrint(initialSelect);
+      }, [records]);
+
+      const togglePrintSelect = (id) => {
+        setSelectedPrint(prev => ({ ...prev, [id]: !prev[id] }));
+      };
+
+      const togglePrintSelectAll = (groupSets, isSelected) => {
+        const next = { ...selectedPrint };
+        groupSets.forEach(s => next[s.id] = isSelected);
+        setSelectedPrint(next);
+      };
 
       useEffect(() => {
         (async () => {
@@ -312,27 +338,89 @@
         setState(emptyState()); setActiveIdx(0);
       };
 
-      const active = sets[activeIdx] || sets[0];
-      const activeCalc = active ? calcSet(active, waterPerBucketKg, deductPercent) : null;
-
+      // จัดกลุ่มข้อมูลแยกตามวันที่ พร้อมสร้างเลขรันนัมเบอร์ใบชั่ง (slipNo)
       const allGroupedByDate = useMemo(() => {
         const map = new Map();
-        records.forEach(record => {
+        // แปลงให้จัดเรียงจากเก่าไปใหม่ เพื่อรันเลขที่ใบชั่งให้ถูกต้อง 1, 2, 3...
+        const sortedRecords = [...records].reverse();
+
+        sortedRecords.forEach(record => {
           (record.sets || []).forEach(set => {
              const dateStr = `${set.day || "-"} ${set.month || "-"} ${set.year || "-"}`;
-             if (!map.has(dateStr)) map.set(dateStr, { dateStr, farm: record.farm, note: record.note, sets: [], totalNet: 0, totalFish: 0, totalGross: 0, totalBuckets: 0, farmerSig: "", transportSig: "" });
+             if (!map.has(dateStr)) {
+                map.set(dateStr, { dateStr, note: record.note, farm: record.farm, sets: [] });
+             }
              const group = map.get(dateStr);
              const c = calcSet(set, record.waterPerBucketKg || "5", record.deductPercent || "2");
-             group.sets.push({ ...set, grossKg: c.gross, waterDeducted: c.waterDeducted, netKg: c.net, fishCount: c.fishCount, bucketCount: c.bucketCount });
-             group.totalGross += c.gross; group.totalNet += c.net; group.totalFish += c.fishCount; group.totalBuckets += c.bucketCount;
-             if (record.note && !group.note) group.note = record.note;
-             if (record.farm && !group.farm) group.farm = record.farm;
-             if (set.farmerSig && !group.farmerSig) group.farmerSig = set.farmerSig;
-             if (set.transportSig && !group.transportSig) group.transportSig = set.transportSig;
+             
+             const slipNo = group.sets.length + 1; // รันเลขที่ใบชั่งของวันนั้นๆ
+
+             group.sets.push({ 
+                 ...set, 
+                 slipNo,
+                 grossKg: c.gross, 
+                 waterDeducted: c.waterDeducted, 
+                 netKg: c.net, 
+                 fishCount: c.fishCount, 
+                 bucketCount: c.bucketCount,
+                 note: record.note,
+                 farm: record.farm,
+                 farmerSig: set.farmerSig || record.farmerSig,
+                 transportSig: set.transportSig || record.transportSig
+             });
           });
         });
-        return Array.from(map.values());
+        
+        // เรียงกลุ่มวันที่จากใหม่ไปเก่า และให้ใบชั่งใหม่สุดอยู่บนสุด
+        const groups = Array.from(map.values()).reverse();
+        groups.forEach(g => {
+            g.sets.reverse();
+            g.totalNet = g.sets.reduce((sum, s) => sum + s.netKg, 0);
+            g.totalFish = g.sets.reduce((sum, s) => sum + s.fishCount, 0);
+            g.totalGross = g.sets.reduce((sum, s) => sum + s.grossKg, 0);
+            g.totalBuckets = g.sets.reduce((sum, s) => sum + s.bucketCount, 0);
+        });
+
+        return groups;
       }, [records]);
+
+      // ฟังก์ชันสำหรับเตรียมข้อมูลไปแสดงในหน้า Modal พิมพ์
+      const handlePrepareReport = (group) => {
+        // กรองเอาเฉพาะ set ที่ user ติ๊กเลือกไว้
+        const selected = group.sets.filter(s => selectedPrint[s.id]);
+        if (selected.length === 0) {
+            alert("กรุณาเลือกอย่างน้อย 1 ใบชั่งเพื่อพิมพ์");
+            return;
+        }
+
+        // คำนวณยอดรวมใหม่เฉพาะใบที่เลือก
+        const totalGross = selected.reduce((sum, s) => sum + s.grossKg, 0);
+        const totalNet = selected.reduce((sum, s) => sum + s.netKg, 0);
+        const totalFish = selected.reduce((sum, s) => sum + s.fishCount, 0);
+        const totalBuckets = selected.reduce((sum, s) => sum + s.bucketCount, 0);
+
+        // ดึงเลขใบชั่งมาทำเป็น Label เช่น "01, 02, 05"
+        // เนื่องจาก sorted reverse มาแล้ว เรากลับด้านอีกทีให้เรียง 01, 02 สวยๆ
+        const sortedSelected = [...selected].sort((a,b) => a.slipNo - b.slipNo);
+        const slipLabel = sortedSelected.map(s => String(s.slipNo).padStart(2, '0')).join(', ');
+
+        setViewReport({
+            dateStr: group.dateStr,
+            farm: selected[0].farm || group.farm,
+            note: selected.find(s => s.note)?.note || group.note,
+            sets: sortedSelected, // ใช้ชุดที่ถูกจัดเรียงเลขแล้ว
+            totalGross,
+            totalNet,
+            totalFish,
+            totalBuckets,
+            farmerSig: selected.find(s => s.farmerSig)?.farmerSig || "",
+            transportSig: selected.find(s => s.transportSig)?.transportSig || "",
+            slipLabel
+        });
+      };
+
+      const active = sets[activeIdx] || sets[0];
+      const activeCalc = active ? calcSet(active, waterPerBucketKg, deductPercent) : null;
 
       return (
         <div style={{ "--teal": "#090909", "--teal-dark": "#0A443C", "--teal-light": "#7EAE53", "--teal-pale": "#E8F4DA", "--amber": "#D98C1F", "--amber-pale": "#FBEBD3", "--bg": "#F4F8F6", "--surface": "#FFFFFF", "--ink": "#16302B", "--ink-soft": "#5C7570", "--border": "#DCE8E3", "--danger": "#C1553D" }}
@@ -344,8 +432,8 @@
             .fw-header-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
             .fw-logo-box { height: 55px; width: auto; border-radius: 8px; margin-right: 12px; background: #fff; padding: 3px; object-fit: contain; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
             .fw-header-left { display: flex; align-items: center; flex: 1; }
-            .fw-title { font-size: 26px; font-weight: 700; margin: 0; color: #fff; letter-spacing: -0.5px; line-height: 1.1; }
-            .fw-subtitle { font-size: 16px; margin: 4px 0 0; color: rgba(255,255,255,0.9); font-weight: 500; }
+            .fw-title { font-size: 24px; font-weight: 700; margin: 0; color: #fff; letter-spacing: -0.5px; line-height: 1.1; }
+            .fw-subtitle { font-size: 15px; margin: 4px 0 0; color: rgba(255,255,255,0.9); font-weight: 500; }
             .fw-icon-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex: none; }
             .fw-icon-btn:active { background: rgba(255,255,255,0.25); }
             .fw-main-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 16px 0; }
@@ -390,7 +478,7 @@
             .fw-summary-value { font-size: 16px; font-weight: 700; margin-top: 1px; color: var(--teal-pale); }
             .fw-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: var(--teal-dark); color: #fff; padding: 12px 24px; border-radius: 99px; font-size: 14.5px; font-weight: 600; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
             .fw-drawer-overlay { position: fixed; inset: 0; background: rgba(10,20,18,0.6); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
-            .fw-drawer { background: #fff; width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; max-height: 85vh; overflow-y: auto; padding: 16px; }
+            .fw-drawer { background: #fff; width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; max-height: 88vh; overflow-y: auto; padding: 16px; display: flex; flexDirection: column; }
             .fw-drawer-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
             .fw-record-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 4px; border-bottom: 1px solid var(--border); }
             .fw-record-label { font-size: 14px; font-weight: 600; }
@@ -399,6 +487,12 @@
             .fw-btn-primary { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--teal-light); color: #fff; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(126,174,83,0.3); }
             .fw-btn-primary:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(126,174,83,0.3); }
             .fw-btn-secondary { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: #fff; color: var(--ink-soft); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; margin-bottom: 12px; }
+            
+            /* Custom Checkbox */
+            .fw-checkbox { width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--teal-light); appearance: none; -webkit-appearance: none; outline: none; cursor: pointer; position: relative; background: #fff; }
+            .fw-checkbox:checked { background-color: var(--teal-light); }
+            .fw-checkbox:checked::after { content: ''; position: absolute; left: 6px; top: 2px; width: 4px; height: 10px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
             .fw-report-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; padding: 16px 8px; }
             .fw-print-sheet { background: #fff; width: 100%; max-width: 600px; border-radius: 12px; padding: 24px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); color: #111; font-size: 13.5px; }
             .fw-print-table { width: 100%; border-collapse: collapse; margin-top: 12px; margin-bottom: 14px; }
@@ -412,6 +506,7 @@
 
           {status && <div className="fw-toast">{status}</div>}
 
+          {/* Modal: ใบสรุปรายงานสำหรับพิมพ์ / บันทึก PDF */}
           {viewReport && (
             <div className="fw-report-overlay" onClick={() => setViewReport(null)}>
               <div className="fw-print-sheet" onClick={(e) => e.stopPropagation()}>
@@ -424,23 +519,27 @@
                   </button>
                 </div>
                 
-                <div style={{ textAlign: 'center', borderBottom: '2px solid var(--teal-dark)', paddingBottom: 10 }}>
+                <div style={{ textAlign: 'center', borderBottom: '2px solid var(--teal-dark)', paddingBottom: 10, position: 'relative' }}>
                   <img src="farm-logo.jpg" alt="Boonchai Group Logo" style={{ height: '70px', objectFit: 'contain', marginBottom: '8px' }} />
-                  <h2 style={{ margin: 0, fontSize: 20, color: '#0A443C' }}>ใบสรุปรายการชั่งลูกปลา</h2>
+                  <h2 style={{ margin: 0, fontSize: 20, color: '#0A443C' }}>ใบส่งมอบ / สรุปรายการชั่งลูกปลา</h2>
+                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>เกษตรกร บูรณ์ชัยกรุ๊ป</div>
                   {viewReport.farm && (
                     <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>
                       {viewReport.farm.address1} {viewReport.farm.address2} {viewReport.farm.branch ? `(สาขา: ${viewReport.farm.branch})` : ''}
                     </div>
                   )}
-                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 6, color: '#0E5C52' }}>
-                    วันที่: {viewReport.dateStr}
+                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 10, color: '#0E5C52', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <span>วันที่: {viewReport.dateStr}</span>
+                    <span style={{ fontSize: 13, color: 'var(--danger)', fontWeight: 700, background: 'var(--amber-pale)', padding: '2px 8px', borderRadius: 6 }}>
+                      ใบชั่งที่: {viewReport.slipLabel}
+                    </span>
                   </div>
                 </div>
 
                 <table className="fw-print-table">
                   <thead>
                     <tr>
-                      <th style={{ width: '8%' }}>ลำดับ</th>
+                      <th style={{ width: '12%' }}>ใบชั่งที่</th>
                       <th>บ่อ/กระชัง</th>
                       <th>รุ่น</th>
                       <th>รถ / ทะเบียน</th>
@@ -453,7 +552,7 @@
                   <tbody>
                     {viewReport.sets.map((s, i) => (
                       <tr key={i}>
-                        <td>{i + 1}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{String(s.slipNo).padStart(2, '0')}</td>
                         <td style={{ fontWeight: 600 }}>{s.pond || "-"}</td>
                         <td>{s.batch || "-"}</td>
                         <td style={{ fontSize: 11 }}>{s.transportName || "-"} {s.plate ? `(${s.plate})` : ''}</td>
@@ -466,7 +565,7 @@
                   </tbody>
                   <tfoot>
                     <tr style={{ background: '#E8F4DA', fontWeight: 700 }}>
-                      <td colSpan="4" style={{ textAlign: 'right', color: '#0A443C' }}>รวมทั้งสิ้น:</td>
+                      <td colSpan="4" style={{ textAlign: 'right', color: '#0A443C' }}>รวมทั้งสิ้นที่เลือก:</td>
                       <td>{viewReport.totalBuckets} ถัง</td>
                       <td style={{ color: '#0A443C', fontSize: 14 }}>{fmt(viewReport.totalNet)} กก.</td>
                       <td>-</td>
@@ -501,6 +600,7 @@
             </div>
           )}
 
+          {/* Drawer: ประวัติการบันทึกทั้งหมด */}
           {showHistory && (
             <div className="fw-drawer-overlay" onClick={() => setShowHistory(false)}>
               <div className="fw-drawer" onClick={(e) => e.stopPropagation()}>
@@ -510,69 +610,113 @@
                     <IconX size={18} />
                   </button>
                 </div>
-                {records.length === 0 && <p style={{ color: "var(--ink-soft)", fontSize: 13.5 }}>ยังไม่มีบันทึกที่เก็บไว้</p>}
-                {records.map((r) => (
-                  <div className="fw-record-row" key={r.key}>
-                    <div onClick={() => loadRecord(r.key)} style={{ cursor: "pointer", flex: 1 }}>
-                      <div className="fw-record-label">{r.label}</div>
-                      <div className="fw-record-meta">{fmt(r.totalNetKg)} กก. สุทธิ · {fmt(r.totalFishCount, 0)} ตัว</div>
+                <div style={{ overflowY: 'auto', flex: 1, paddingRight: 4 }}>
+                  {records.length === 0 && <p style={{ color: "var(--ink-soft)", fontSize: 13.5 }}>ยังไม่มีบันทึกที่เก็บไว้</p>}
+                  {records.map((r) => (
+                    <div className="fw-record-row" key={r.key}>
+                      <div onClick={() => loadRecord(r.key)} style={{ cursor: "pointer", flex: 1 }}>
+                        <div className="fw-record-label">{r.label}</div>
+                        <div className="fw-record-meta">{fmt(r.totalNetKg)} กก. สุทธิ · {fmt(r.totalFishCount, 0)} ตัว</div>
+                      </div>
+                      <div className="fw-record-btns">
+                        <button className="fw-icon-sm" onClick={() => deleteRecord(r.key)}><IconTrash2 size={15} /></button>
+                      </div>
                     </div>
-                    <div className="fw-record-btns">
-                      <button className="fw-icon-sm" onClick={() => deleteRecord(r.key)}><IconTrash2 size={15} /></button>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
+          {/* Drawer: สรุปยอดรวม (เรียงตามวัน พร้อม Checkbox) */}
           {showDaily && (
             <div className="fw-drawer-overlay" onClick={() => setShowDaily(false)}>
               <div className="fw-drawer" onClick={(e) => e.stopPropagation()}>
                 <div className="fw-drawer-head">
-                  <span style={{ fontWeight: 700, fontSize: 16 }}>สรุปรายการย้อนหลังทั้งหมด</span>
+                  <span style={{ fontWeight: 700, fontSize: 16 }}>สรุปเพื่อพิมพ์รายงาน</span>
                   <button className="fw-icon-btn" style={{ background: "rgba(0,0,0,0.05)", color: "var(--ink)" }} onClick={() => setShowDaily(false)}>
                     <IconX size={18} />
                   </button>
                 </div>
-                {allGroupedByDate.length === 0 && <p style={{ color: "var(--ink-soft)", fontSize: 13.5 }}>ยังไม่มีข้อมูลใบชั่งที่บันทึกไว้</p>}
                 
-                {allGroupedByDate.map((group, idx) => (
-                  <div key={idx} style={{ marginBottom: 20, background: '#fff', border: '1px solid var(--border)', borderRadius: 12, padding: '12px' }}>
-                    <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--teal-dark)', borderBottom: '1.5px solid var(--teal-pale)', paddingBottom: 6, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>วันที่ {group.dateStr}</span>
-                      <button 
-                        onClick={() => setViewReport(group)}
-                        style={{ background: 'var(--teal-pale)', color: 'var(--teal-dark)', border: 'none', padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <IconPrinter size={13} /> ดูใบสรุป / พิมพ์
-                      </button>
-                    </div>
-                    {group.sets.map((row, i) => (
-                      <div className="fw-record-row" key={i}>
-                        <div>
-                          <div className="fw-record-label">บ่อ/กระชัง {row.pond || "-"}{row.batch ? " รุ่น " + row.batch : ""}</div>
-                          <div className="fw-record-meta">{row.transportName ? `รถ: ${row.transportName}` : ''} · {row.bucketCount} ถัง · {fmt(row.fishCount, 0)} ตัว</div>
+                <div style={{ overflowY: 'auto', flex: 1, paddingRight: 4 }}>
+                  {allGroupedByDate.length === 0 && <p style={{ color: "var(--ink-soft)", fontSize: 13.5 }}>ยังไม่มีข้อมูลใบชั่งที่บันทึกไว้</p>}
+                  
+                  {allGroupedByDate.map((group, idx) => {
+                    const allSelected = group.sets.every(s => selectedPrint[s.id]);
+                    const someSelected = group.sets.some(s => selectedPrint[s.id]);
+
+                    return (
+                      <div key={idx} style={{ marginBottom: 20, background: '#fff', border: '1px solid var(--border)', borderRadius: 12, padding: '12px' }}>
+                        <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--teal-dark)', borderBottom: '1.5px solid var(--teal-pale)', paddingBottom: 8, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>วันที่ {group.dateStr}</span>
+                          <button 
+                            onClick={() => handlePrepareReport(group)}
+                            disabled={!someSelected}
+                            style={{ background: someSelected ? 'var(--teal-light)' : '#ccc', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: someSelected ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <IconPrinter size={13} /> พิมพ์ใบที่เลือก
+                          </button>
                         </div>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--teal-dark)' }}>{fmt(row.netKg)} กก.</div>
-                      </div>
-                    ))}
-                    {group.sets.length > 0 && (
-                      <div className="fw-record-row" style={{ borderBottom: "none", marginTop: 6, background: 'var(--teal-pale)', borderRadius: 8, padding: '8px 10px' }}>
-                        <div className="fw-record-label" style={{ color: 'var(--teal-dark)' }}>รวมทั้งวัน</div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontWeight: 700, fontSize: 15, color: "var(--teal-dark)" }}>{fmt(group.totalNet)} กก.</div>
-                          <div className="fw-record-meta" style={{ color: 'var(--teal-dark)' }}>{fmt(group.totalFish, 0)} ตัว</div>
+                        
+                        {/* ปุ่มเลือกทั้งหมดของวันนั้น */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13, color: 'var(--ink-soft)' }}>
+                          <input 
+                            type="checkbox" 
+                            className="fw-checkbox"
+                            checked={allSelected} 
+                            onChange={(e) => togglePrintSelectAll(group.sets, e.target.checked)} 
+                          />
+                          <label style={{ fontWeight: 600, cursor: 'pointer' }} onClick={() => togglePrintSelectAll(group.sets, !allSelected)}>เลือกทั้งหมดในวันนี้</label>
                         </div>
+
+                        {group.sets.map((row, i) => (
+                          <div className="fw-record-row" key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <input 
+                              type="checkbox" 
+                              className="fw-checkbox"
+                              checked={!!selectedPrint[row.id]} 
+                              onChange={() => togglePrintSelect(row.id)} 
+                              style={{ flex: 'none' }}
+                            />
+                            <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => togglePrintSelect(row.id)}>
+                              <div className="fw-record-label">ใบชั่ง #{String(row.slipNo).padStart(2,'0')} - บ่อ {row.pond || "-"}{row.batch ? " รุ่น " + row.batch : ""}</div>
+                              <div className="fw-record-meta">{row.transportName ? `รถ: ${row.transportName}` : ''} · {row.bucketCount} ถัง · {fmt(row.fishCount, 0)} ตัว</div>
+                            </div>
+                            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--teal-dark)', flex: 'none' }}>{fmt(row.netKg)} กก.</div>
+                          </div>
+                        ))}
+
+                        {/* แสดงยอดรวมเฉพาะใบที่เลือก */}
+                        {(() => {
+                          const selectedInGroup = group.sets.filter(s => selectedPrint[s.id]);
+                          const selNet = selectedInGroup.reduce((sum, s) => sum + s.netKg, 0);
+                          const selFish = selectedInGroup.reduce((sum, s) => sum + s.fishCount, 0);
+                          
+                          if(selectedInGroup.length > 0) {
+                            return (
+                              <div className="fw-record-row" style={{ borderBottom: "none", marginTop: 6, background: 'var(--teal-pale)', borderRadius: 8, padding: '8px 10px' }}>
+                                <div className="fw-record-label" style={{ color: 'var(--teal-dark)' }}>รวมเฉพาะที่เลือก</div>
+                                <div style={{ textAlign: "right" }}>
+                                  <div style={{ fontWeight: 700, fontSize: 15, color: "var(--teal-dark)" }}>{fmt(selNet)} กก.</div>
+                                  <div className="fw-record-meta" style={{ color: 'var(--teal-dark)' }}>{fmt(selFish, 0)} ตัว</div>
+                                </div>
+                              </div>
+                            )
+                          }
+                          return null;
+                        })()}
                       </div>
-                    )}
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
 
+          {/* ส่วนหัวกระดาษแอปพลิเคชัน พร้อมโลโก้ด้านซ้าย */}
           <div className="fw-header">
             <div className="fw-header-top">
+              
               <div className="fw-header-left">
                 {mainTab !== 'home' && (
                   <button onClick={() => setMainTab('home')} className="fw-icon-btn" style={{ marginRight: '8px' }}>
@@ -587,10 +731,12 @@
                   <p className="fw-subtitle">บูรณ์ชัยกรุ๊ป</p>
                 </div>
               </div>
+
               <div style={{ display: "flex", gap: 6 }}>
                 <button className="fw-icon-btn" onClick={() => setShowDaily(true)} aria-label="สรุป"><IconClipboardList size={18} /></button>
                 <button className="fw-icon-btn" onClick={() => setShowHistory(true)} aria-label="ประวัติ"><IconHistory size={18} /></button>
               </div>
+              
             </div>
           </div>
 
@@ -796,6 +942,7 @@
             </div>
           )}
 
+          {/* แถบสรุปผลล่างสุด (ซ่อนเมื่ออยู่หน้าแรก) */}
           {mainTab !== 'home' && (
             <div className="fw-summary-bar">
               <div className="fw-summary-item">
