@@ -47,10 +47,10 @@
     const IconPrinter = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>;
     const IconArrowRight = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
     const IconArrowLeft = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
-    
     const IconFish = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.46-3.44 6-7 6-3.56 0-7.56-2.54-8.5-6Z"></path><path d="M18 12v.01"></path><path d="M11.5 10.5c-1 0-2 1-2 2s1 2 2 2"></path><path d="M6.5 12c-2.3 0-3.5-1-4.5-2C1 9 1 7 1 7s2 0 3 1c1 1 2.2 2 2.5 4Z"></path><path d="M6.5 12c-2.3 0-3.5 1-4.5 2C1 15 1 17 1 17s2 0 3-1c1-1 2.2-2 2.5-4Z"></path></svg>;
     const IconBook = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path><path d="M8 7h6"></path><path d="M8 11h8"></path></svg>;
     const IconLock = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
+    const IconCheckSquare = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>;
 
     // -----------------------------------------------------------------------------
     // ⭐ นำ Web App URL ที่ได้จาก Google Apps Script มาใส่ในเครื่องหมายคำพูดด้านล่างนี้เลยครับ
@@ -389,6 +389,18 @@
 
         const sortedSelected = [...selected].sort((a,b) => a.slipNo - b.slipNo);
         const slipLabel = sortedSelected.map(s => String(s.slipNo).padStart(2, '0')).join(', ');
+        
+        // รวบรวมข้อมูลรถขนส่งทั้งหมดในใบนี้
+        const transportSet = new Set();
+        sortedSelected.forEach(s => {
+          let tName = s.transportName ? s.transportName.trim() : "";
+          let tPlate = s.plate ? `(${s.plate.trim()})` : "";
+          let combined = `${tName} ${tPlate}`.trim();
+          if (combined) {
+            transportSet.add(combined);
+          }
+        });
+        const transportInfo = Array.from(transportSet).join(', ');
 
         setViewReport({
             dateStr: group.dateStr,
@@ -402,7 +414,8 @@
             totalWater,
             farmerSig: selected.find(s => s.farmerSig)?.farmerSig || "",
             transportSig: selected.find(s => s.transportSig)?.transportSig || "",
-            slipLabel
+            slipLabel,
+            transportInfo
         });
       };
 
@@ -531,38 +544,38 @@
                 <table className="fw-print-table">
                   <thead>
                     <tr>
-                      <th style={{ width: '8%' }}>ใบชั่งที่</th>
-                      <th style={{ width: '8%' }}>บ่อ/กระชัง</th>
-                      <th style={{ width: '8%' }}>รุ่น</th>
-                      <th style={{ width: '12%' }}>รถ/ทะเบียน</th>
-                      <th style={{ width: '8%' }}>จำนวนถัง</th>
-                      <th style={{ width: '12%' }}>นน.รวม (กก.)</th>
+                      <th style={{ width: '10%' }}>ใบชั่งที่</th>
+                      <th style={{ width: '12%' }}>บ่อ/กระชัง</th>
+                      <th style={{ width: '10%' }}>รุ่น</th>
+                      <th style={{ width: '10%' }}>จำนวนถัง</th>
+                      <th style={{ width: '13%' }}>นน.รวม (กก.)</th>
                       <th style={{ width: '10%' }}>หักน้ำ (กก.)</th>
-                      <th style={{ width: '12%' }}>นน.สุทธิ (กก.)</th>
+                      <th style={{ width: '13%' }}>นน.สุทธิ (กก.)</th>
                       <th style={{ width: '10%' }}>ไซส์ (กรัม)</th>
                       <th style={{ width: '12%' }}>จำนวนตัว</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {viewReport.sets.map((s, i) => (
-                      <tr key={i}>
-                        <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{String(s.slipNo).padStart(2, '0')}</td>
-                        <td style={{ fontWeight: 600 }}>{s.pond || "-"}</td>
-                        <td>{s.batch || "-"}</td>
-                        <td style={{ fontSize: 11 }}>{s.transportName || "-"}{s.plate ? ` (${s.plate})` : ''}</td>
-                        <td style={{ fontWeight: 700 }}>{s.bucketCount}</td>
-                        <td style={{ fontWeight: 600 }}>{fmt(s.grossKg)}</td>
-                        <td style={{ fontWeight: 600, color: 'var(--danger)' }}>{fmt(s.waterDeducted)}</td>
-                        <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{fmt(s.netKg)}</td>
-                        <td>{s.sizeGram ? fmt(s.sizeGram, 1) : '-'}</td>
-                        <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{fmt(s.fishCount, 0)}</td>
-                      </tr>
-                    ))}
+                    {viewReport.sets.map((s, i) => {
+                      return (
+                        <tr key={i}>
+                          <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{String(s.slipNo).padStart(2, '0')}</td>
+                          <td style={{ fontWeight: 600 }}>{s.pond || "-"}</td>
+                          <td>{s.batch || "-"}</td>
+                          <td style={{ fontWeight: 700 }}>{s.bucketCount}</td>
+                          <td style={{ fontWeight: 600 }}>{fmt(s.grossKg)}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--danger)' }}>{fmt(s.waterDeducted)}</td>
+                          <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{fmt(s.netKg)}</td>
+                          <td>{s.sizeGram ? fmt(s.sizeGram, 1) : '-'}</td>
+                          <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{fmt(s.fishCount, 0)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                   <tfoot>
                     <tr style={{ background: '#E8F4DA', fontWeight: 700 }}>
-                      <td colSpan="4" style={{ textAlign: 'right', color: '#0A443C' }}>รวมทั้งสิ้นที่เลือก:</td>
-                      <td style={{ color: '#0A443C' }}>{viewReport.totalBuckets}</td>
+                      <td colSpan="3" style={{ textAlign: 'right', color: '#0A443C' }}>รวม:</td>
+                      <td style={{ color: '#0A443C', textAlign: 'center' }}>{viewReport.totalBuckets}</td>
                       <td style={{ color: '#0A443C' }}>{fmt(viewReport.totalGross)}</td>
                       <td style={{ color: '#C1553D' }}>{fmt(viewReport.totalWater)}</td>
                       <td style={{ color: '#0A443C', fontSize: 14 }}>{fmt(viewReport.totalNet)}</td>
@@ -605,7 +618,11 @@
                     <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>( เกษตรกรผู้ส่งมอบ )</div>
                   </div>
                   <div>
-                    <div className="fw-print-sig-container">
+                    {/* เพิ่มชื่อรถและทะเบียนขนส่งไว้เหนือลายเซ็น */}
+                    <div style={{ color: '#C1553D', fontSize: '11px', fontWeight: 600, marginBottom: '4px', minHeight: '16px' }}>
+                      {viewReport.transportInfo ? `รถขนส่ง: ${viewReport.transportInfo}` : ''}
+                    </div>
+                    <div className="fw-print-sig-container" style={{ height: '45px' }}>
                       {viewReport.transportSig && <img src={viewReport.transportSig} className="fw-print-sig-img" />}
                       <div className="fw-print-sigline"></div>
                     </div>
