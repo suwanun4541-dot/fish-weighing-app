@@ -50,6 +50,12 @@
     
     const IconFish = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.46-3.44 6-7 6-3.56 0-7.56-2.54-8.5-6Z"></path><path d="M18 12v.01"></path><path d="M11.5 10.5c-1 0-2 1-2 2s1 2 2 2"></path><path d="M6.5 12c-2.3 0-3.5-1-4.5-2C1 9 1 7 1 7s2 0 3 1c1 1 2.2 2 2.5 4Z"></path><path d="M6.5 12c-2.3 0-3.5 1-4.5 2C1 15 1 17 1 17s2 0 3-1c1-1 2.2-2 2.5-4Z"></path></svg>;
     const IconBook = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path><path d="M8 7h6"></path><path d="M8 11h8"></path></svg>;
+    const IconLock = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
+
+    // -----------------------------------------------------------------------------
+    // ⭐ นำ Web App URL ที่ได้จาก Google Apps Script มาใส่ในเครื่องหมายคำพูดด้านล่างนี้เลยครับ
+    // -----------------------------------------------------------------------------
+    const GOOGLE_SHEET_API_URL = ""; 
 
     const storage = {
       get: async (key) => ({ value: localStorage.getItem(key) }),
@@ -78,24 +84,13 @@
 
     const newBucket = () => ({ id: uid(), weight: "" });
     const newSet = (index) => ({ 
-      id: uid(), 
-      pond: "", 
-      batch: "", 
-      sizeGram: "", 
-      transportName: "", 
-      plate: "", 
-      farmerSig: "",
-      transportSig: "",
-      ...todayDefaults(),
-      buckets: [newBucket()] 
+      id: uid(), pond: "", batch: "", sizeGram: "", transportName: "", plate: "", farmerSig: "", transportSig: "", ...todayDefaults(), buckets: [newBucket()] 
     });
 
     const emptyState = () => ({
+      farm: { address1: "", address2: "", batch: "", branch: "" },
       sample: { counted: "", weighedKg: "" },
-      waterPerBucketKg: "5",
-      deductPercent: "2",
-      note: "",
-      sets: [newSet(1)],
+      waterPerBucketKg: "5", deductPercent: "2", note: "", sets: [newSet(1)],
     });
 
     const calcSet = (set, waterPerBucketKg, deductPercent) => {
@@ -110,9 +105,7 @@
     };
 
     const setLabel = (set) => {
-      if (set.pond || set.batch) {
-        return `บ่อ/กระชัง ${set.pond || "-"}${set.batch ? " รุ่น " + set.batch : ""}`;
-      }
+      if (set.pond || set.batch) return `บ่อ/กระชัง ${set.pond || "-"}${set.batch ? " รุ่น " + set.batch : ""}`;
       return "ใบชั่งใหม่";
     };
 
@@ -126,19 +119,13 @@
           const canvas = canvasRef.current;
           const ctx = canvas.getContext('2d');
           const img = new Image();
-          img.onload = () => {
-            ctx.drawImage(img, 0, 0);
-          };
+          img.onload = () => { ctx.drawImage(img, 0, 0); };
           img.src = value;
           hasLoaded.current = true;
         }
       }, [value]);
 
-      const start = (e) => {
-        setIsDrawing(true);
-        draw(e);
-      };
-      
+      const start = (e) => { setIsDrawing(true); draw(e); };
       const stop = () => {
         setIsDrawing(false);
         if (canvasRef.current) {
@@ -152,21 +139,12 @@
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
         const rect = canvas.getBoundingClientRect();
-        
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
         const x = clientX - rect.left;
         const y = clientY - rect.top;
-        
-        ctx.lineWidth = 2.5;
-        ctx.lineCap = "round";
-        ctx.strokeStyle = "#16302B";
-        
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x, y);
+        ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.strokeStyle = "#16302B";
+        ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
       };
 
       const clear = (e) => {
@@ -181,16 +159,7 @@
       return (
         <div style={{ border: "1px solid var(--border)", borderRadius: 10, background: "#fff", padding: "8px 8px 12px", position: 'relative' }}>
           <div style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 6, fontWeight: 600 }}>{label}</div>
-          <canvas
-            ref={canvasRef}
-            width={200}
-            height={100}
-            style={{ width: '100%', height: '80px', border: '1px dashed var(--border)', borderRadius: 6, background: 'var(--bg)' }}
-            onPointerDown={start}
-            onPointerMove={draw}
-            onPointerUp={stop}
-            onPointerOut={stop}
-          />
+          <canvas ref={canvasRef} width={200} height={100} style={{ width: '100%', height: '80px', border: '1px dashed var(--border)', borderRadius: 6, background: 'var(--bg)' }} onPointerDown={start} onPointerMove={draw} onPointerUp={stop} onPointerOut={stop} />
           <button onClick={clear} style={{ position: 'absolute', top: 6, right: 8, fontSize: 11, background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}>ล้าง</button>
           <div style={{ borderBottom: '1px solid var(--ink)', width: '80%', margin: '14px auto 0', opacity: 0.3 }}></div>
         </div>
@@ -201,7 +170,6 @@
       const [state, setState] = useState(emptyState());
       const [activeIdx, setActiveIdx] = useState(0);
       const [mainTab, setMainTab] = useState('home'); 
-      
       const [showHistory, setShowHistory] = useState(false);
       const [showDaily, setShowDaily] = useState(false);
       const [records, setRecords] = useState([]);
@@ -210,19 +178,17 @@
       const [viewReport, setViewReport] = useState(null);
       const saveTimer = useRef(null);
 
-      const { sample, waterPerBucketKg, deductPercent, note, sets } = state;
+      const { farm, sample, waterPerBucketKg, deductPercent, note, sets } = state;
 
       const update = (patch) => setState((s) => ({ ...s, ...patch }));
+      const updateFarm = (patch) => setState((s) => ({ ...s, farm: { ...s.farm, ...patch } }));
       const updateSample = (patch) => setState((s) => ({ ...s, sample: { ...s.sample, ...patch } }));
 
       useEffect(() => {
         (async () => {
           try {
             const r = await storage.get("session:current");
-            if (r && r.value) {
-              const parsed = JSON.parse(r.value);
-              setState((s) => ({ ...s, ...parsed }));
-            }
+            if (r && r.value) setState((s) => ({ ...s, ...JSON.parse(r.value) }));
           } catch (e) {}
           setLoaded(true);
         })();
@@ -232,9 +198,7 @@
         if (!loaded) return;
         if (saveTimer.current) clearTimeout(saveTimer.current);
         saveTimer.current = setTimeout(async () => {
-          try {
-            await storage.set("session:current", JSON.stringify(state));
-          } catch (e) {}
+          try { await storage.set("session:current", JSON.stringify(state)); } catch (e) {}
         }, 800);
         return () => clearTimeout(saveTimer.current);
       }, [state, loaded]);
@@ -244,14 +208,10 @@
           const idx = await storage.get("records:index");
           const list = idx && idx.value ? JSON.parse(idx.value) : [];
           setRecords(list.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0)));
-        } catch (e) {
-          setRecords([]);
-        }
+        } catch (e) { setRecords([]); }
       }, []);
 
-      useEffect(() => {
-        if (showHistory || showDaily) loadRecords();
-      }, [showHistory, showDaily, loadRecords]);
+      useEffect(() => { if (showHistory || showDaily) loadRecords(); }, [showHistory, showDaily, loadRecords]);
 
       const sampleNetKg = Math.max(0, num(sample.weighedKg) - num(waterPerBucketKg));
       const perFishGram = sample.counted && sampleNetKg > 0 ? (sampleNetKg * 1000) / num(sample.counted) : 0;
@@ -261,45 +221,25 @@
       const grandFishCount = allCalc.reduce((s, c) => s + c.fishCount, 0);
       const grandBuckets = allCalc.reduce((s, c) => s + c.bucketCount, 0);
 
-      const addSet = () => {
-        update({ sets: [...sets, newSet(sets.length + 1)] });
-        setActiveIdx(sets.length);
-      };
+      const addSet = () => { update({ sets: [...sets, newSet(sets.length + 1)] }); setActiveIdx(sets.length); };
       const removeSet = (id) => {
         if (sets.length <= 1) return;
         const idx = sets.findIndex((s) => s.id === id);
         const next = sets.filter((s) => s.id !== id);
-        update({ sets: next });
-        setActiveIdx(Math.max(0, Math.min(idx, next.length - 1)));
+        update({ sets: next }); setActiveIdx(Math.max(0, Math.min(idx, next.length - 1)));
       };
-      const patchSet = (id, patch) => {
-        update({ sets: sets.map((s) => (s.id === id ? { ...s, ...patch } : s)) });
-      };
-      const addBucket = (setId) => {
-        update({ sets: sets.map((s) => (s.id === setId ? { ...s, buckets: [...s.buckets, newBucket()] } : s)) });
-      };
+      const patchSet = (id, patch) => update({ sets: sets.map((s) => (s.id === id ? { ...s, ...patch } : s)) });
+      const addBucket = (setId) => update({ sets: sets.map((s) => (s.id === setId ? { ...s, buckets: [...s.buckets, newBucket()] } : s)) });
       const removeBucket = (setId, bucketId) => {
-        update({
-          sets: sets.map((s) =>
-            s.id === setId
-              ? { ...s, buckets: s.buckets.length > 1 ? s.buckets.filter((b) => b.id !== bucketId) : s.buckets }
-              : s
-          ),
-        });
+        update({ sets: sets.map((s) => s.id === setId ? { ...s, buckets: s.buckets.length > 1 ? s.buckets.filter((b) => b.id !== bucketId) : s.buckets } : s ) });
       };
-      const patchBucket = (setId, bucketId, weight) => {
-        update({
-          sets: sets.map((s) =>
-            s.id === setId ? { ...s, buckets: s.buckets.map((b) => (b.id === bucketId ? { ...b, weight } : b)) } : s
-          ),
-        });
-      };
+      const patchBucket = (setId, bucketId, weight) => update({ sets: sets.map((s) => s.id === setId ? { ...s, buckets: s.buckets.map((b) => (b.id === bucketId ? { ...b, weight } : b)) } : s ) });
 
       const saveRecord = async () => {
         try {
+          setStatus("กำลังบันทึกข้อมูล...");
           const id = uid();
           const label = `บันทึกเวลา ${new Date().toLocaleTimeString("th-TH", {hour: '2-digit', minute:'2-digit'})}`;
-          
           const totalNetKg = allCalc.reduce((sum, c) => sum + c.net, 0);
           const totalFishCount = allCalc.reduce((sum, c) => sum + c.fishCount, 0);
 
@@ -307,28 +247,42 @@
           const idxRes = await storage.get("records:index").catch(() => null);
           const list = idxRes && idxRes.value ? JSON.parse(idxRes.value) : [];
           
-          list.push({
-            key: id, 
-            label, 
-            savedAt: Date.now(),
-            sets: sets,
-            totalNetKg, 
-            totalFishCount,
-            waterPerBucketKg,
-            deductPercent,
-            note
-          });
-          
+          list.push({ key: id, label, savedAt: Date.now(), farm, sets: sets, totalNetKg, totalFishCount, waterPerBucketKg, deductPercent, note });
           await storage.set("records:index", JSON.stringify(list));
+
+          // ----------------------------------------------------
+          // การส่งข้อมูลเข้า Google Sheets แบบเบื้องหลัง
+          // ----------------------------------------------------
+          if (GOOGLE_SHEET_API_URL && GOOGLE_SHEET_API_URL.length > 10) {
+            const rowsToSave = sets.map((s) => {
+              const c = calcSet(s, waterPerBucketKg, deductPercent);
+              return {
+                dateStr: `${s.day || "-"} ${s.month || "-"} ${s.year || "-"}`,
+                timeStr: new Date().toLocaleTimeString("th-TH", {hour: '2-digit', minute:'2-digit'}),
+                branch: farm.branch || "-",
+                pond: s.pond || "-",
+                batch: s.batch || "-",
+                transport: s.transportName || "-",
+                plate: s.plate || "-",
+                bucketCount: c.bucketCount,
+                grossKg: c.gross,
+                waterDeducted: c.waterDeducted,
+                netKg: c.net,
+                sizeGram: s.sizeGram || "-",
+                fishCount: Math.round(c.fishCount),
+                note: note || "-"
+              };
+            });
+
+            fetch(GOOGLE_SHEET_API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({ rows: rowsToSave })
+            }).catch(err => console.error("Sheet sync error", err));
+          }
+          
           setStatus("บันทึกข้อมูลเรียบร้อยแล้ว!");
-          
-          setTimeout(() => {
-            setStatus("");
-            setState(emptyState());
-            setActiveIdx(0);
-            setMainTab('home'); 
-          }, 1500);
-          
+          setTimeout(() => { setStatus(""); setState(emptyState()); setActiveIdx(0); setMainTab('home'); }, 1500);
         } catch (e) {
           setStatus("บันทึกไม่สำเร็จ");
           setTimeout(() => setStatus(""), 2000);
@@ -338,12 +292,7 @@
       const loadRecord = async (key) => {
         try {
           const r = await storage.get(`records:${key}`);
-          if (r && r.value) {
-            setState(JSON.parse(r.value));
-            setActiveIdx(0);
-            setShowHistory(false);
-            setMainTab('weighing'); 
-          }
+          if (r && r.value) { setState(JSON.parse(r.value)); setActiveIdx(0); setShowHistory(false); setMainTab('weighing'); }
         } catch (e) {}
       };
 
@@ -360,8 +309,7 @@
 
       const resetForm = () => {
         if (!window.confirm("เคลียร์ข้อมูลทั้งหมดเพื่อเริ่มใบชั่งใหม่?")) return;
-        setState(emptyState());
-        setActiveIdx(0);
+        setState(emptyState()); setActiveIdx(0);
       };
 
       const active = sets[activeIdx] || sets[0];
@@ -372,36 +320,13 @@
         records.forEach(record => {
           (record.sets || []).forEach(set => {
              const dateStr = `${set.day || "-"} ${set.month || "-"} ${set.year || "-"}`;
-             if (!map.has(dateStr)) {
-               map.set(dateStr, { 
-                 dateStr, 
-                 note: record.note,
-                 sets: [], 
-                 totalNet: 0, 
-                 totalFish: 0, 
-                 totalGross: 0,
-                 totalBuckets: 0,
-                 farmerSig: "",
-                 transportSig: ""
-               });
-             }
+             if (!map.has(dateStr)) map.set(dateStr, { dateStr, farm: record.farm, note: record.note, sets: [], totalNet: 0, totalFish: 0, totalGross: 0, totalBuckets: 0, farmerSig: "", transportSig: "" });
              const group = map.get(dateStr);
              const c = calcSet(set, record.waterPerBucketKg || "5", record.deductPercent || "2");
-             
-             group.sets.push({
-               ...set,
-               grossKg: c.gross,
-               waterDeducted: c.waterDeducted,
-               netKg: c.net,
-               fishCount: c.fishCount,
-               bucketCount: c.bucketCount
-             });
-             group.totalGross += c.gross;
-             group.totalNet += c.net;
-             group.totalFish += c.fishCount;
-             group.totalBuckets += c.bucketCount;
-             
+             group.sets.push({ ...set, grossKg: c.gross, waterDeducted: c.waterDeducted, netKg: c.net, fishCount: c.fishCount, bucketCount: c.bucketCount });
+             group.totalGross += c.gross; group.totalNet += c.net; group.totalFish += c.fishCount; group.totalBuckets += c.bucketCount;
              if (record.note && !group.note) group.note = record.note;
+             if (record.farm && !group.farm) group.farm = record.farm;
              if (set.farmerSig && !group.farmerSig) group.farmerSig = set.farmerSig;
              if (set.transportSig && !group.transportSig) group.transportSig = set.transportSig;
           });
@@ -414,180 +339,68 @@
           className="fw-root">
           <style>{`
             .fw-root * { box-sizing: border-box; }
-            .fw-root {
-              font-family: 'Sarabun', -apple-system, sans-serif;
-              background: var(--bg);
-              color: var(--ink);
-              max-width: 480px;
-              margin: 0 auto;
-              padding-bottom: 90px;
-              min-height: 100vh;
-            }
-            .fw-header {
-              background: var(--teal-dark);
-              color: #fff;
-              padding: 24px 16px;
-              border-radius: 0 0 20px 20px;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-              margin-bottom: 10px;
-            }
+            .fw-root { font-family: 'Sarabun', -apple-system, sans-serif; background: var(--bg); color: var(--ink); max-width: 480px; margin: 0 auto; padding-bottom: 90px; min-height: 100vh; }
+            .fw-header { background: var(--teal-dark); color: #fff; padding: 24px 16px; border-radius: 0 0 20px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 10px; }
             .fw-header-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-            
-            .fw-logo-box {
-              height: 55px; width: auto; border-radius: 8px; margin-right: 12px;
-              background: #fff; padding: 3px; object-fit: contain; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            }
+            .fw-logo-box { height: 55px; width: auto; border-radius: 8px; margin-right: 12px; background: #fff; padding: 3px; object-fit: contain; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
             .fw-header-left { display: flex; align-items: center; flex: 1; }
-            
             .fw-title { font-size: 26px; font-weight: 700; margin: 0; color: #fff; letter-spacing: -0.5px; line-height: 1.1; }
             .fw-subtitle { font-size: 16px; margin: 4px 0 0; color: rgba(255,255,255,0.9); font-weight: 500; }
-            
-            .fw-icon-btn {
-              background: rgba(255,255,255,0.15);
-              border: none; color: #fff; width: 38px; height: 38px;
-              border-radius: 12px; display: flex; align-items: center; justify-content: center;
-              cursor: pointer; transition: all 0.2s; flex: none;
-            }
+            .fw-icon-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex: none; }
             .fw-icon-btn:active { background: rgba(255,255,255,0.25); }
-            
             .fw-main-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 16px 0; }
-            .fw-main-tab-btn {
-              padding: 12px; border-radius: 12px; border: none; font-size: 15px; font-weight: 700;
-              cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center;
-            }
+            .fw-main-tab-btn { padding: 12px; border-radius: 12px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; }
             .fw-main-tab-active { background: var(--teal-dark); color: #fff; box-shadow: 0 4px 10px rgba(10,68,60,0.25); }
             .fw-main-tab-inactive { background: #fff; color: var(--ink-soft); box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-
             .fw-section { padding: 14px 16px 0; }
-            .fw-card {
-              background: var(--surface); border: 1px solid var(--border);
-              border-radius: 14px; padding: 14px; margin-bottom: 14px;
-            }
-            .fw-card-title {
-              font-size: 15px; font-weight: 700; color: var(--teal-dark);
-              margin: 0 0 10px; display: flex; align-items: center; gap: 6px;
-            }
+            .fw-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+            .fw-card-title { font-size: 15px; font-weight: 700; color: var(--teal-dark); margin: 0 0 10px; display: flex; align-items: center; gap: 6px; }
             .fw-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
             .fw-grid3 { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; }
             .fw-field { margin-bottom: 8px; }
             .fw-field label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; }
-            .fw-field input, .fw-field select {
-              width: 100%; border: 1px solid var(--border); border-radius: 9px;
-              padding: 9px 10px; font-size: 15px; font-family: inherit;
-              background: #fff; color: var(--ink);
-            }
-            .fw-field textarea {
-              width: 100%; border: 1px solid var(--border); border-radius: 9px;
-              padding: 9px 10px; font-size: 15px; font-family: inherit;
-              background: #fff; color: var(--ink); resize: vertical; min-height: 80px;
-            }
-            .fw-field input:focus, .fw-field select:focus, .fw-field textarea:focus {
-              outline: none; border-color: var(--teal-light); box-shadow: 0 0 0 3px var(--teal-pale);
-            }
-            .fw-result-box {
-              background: var(--teal-pale); border-radius: 10px; padding: 10px 12px;
-              display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px;
-              border: 1px solid rgba(126, 174, 83, 0.3);
-            }
+            .fw-field input, .fw-field select { width: 100%; border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; font-size: 15px; font-family: inherit; background: #fff; color: var(--ink); }
+            .fw-field textarea { width: 100%; border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; font-size: 15px; font-family: inherit; background: #fff; color: var(--ink); resize: vertical; min-height: 80px; }
+            .fw-field input:focus, .fw-field select:focus, .fw-field textarea:focus { outline: none; border-color: var(--teal-light); box-shadow: 0 0 0 3px var(--teal-pale); }
+            .fw-result-box { background: var(--teal-pale); border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; border: 1px solid rgba(126, 174, 83, 0.3); }
             .fw-result-label { font-size: 12.5px; color: var(--teal-dark); font-weight: 500; }
             .fw-result-value { font-size: 19px; font-weight: 700; color: var(--teal-dark); }
             .fw-result-unit { font-size: 12px; font-weight: 400; margin-left: 3px; }
             .fw-note { font-size: 11.5px; color: var(--ink-soft); margin-top: 6px; line-height: 1.4; }
-            
             .fw-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 4px; -webkit-overflow-scrolling: touch; }
-            .fw-tab {
-              flex: none; padding: 8px 14px; border-radius: 999px; font-size: 13.5px;
-              font-weight: 600; border: 1px solid var(--border); background: #fff; color: var(--ink-soft);
-              cursor: pointer; white-space: nowrap;
-            }
+            .fw-tab { flex: none; padding: 8px 14px; border-radius: 999px; font-size: 13.5px; font-weight: 600; border: 1px solid var(--border); background: #fff; color: var(--ink-soft); cursor: pointer; white-space: nowrap; }
             .fw-tab.active { background: var(--teal-dark); border-color: var(--teal-dark); color: #fff; }
-            .fw-tab-add {
-              flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px dashed var(--teal-light);
-              background: var(--teal-pale); color: var(--teal-dark); display: flex; align-items: center; justify-content: center; cursor: pointer;
-            }
-            
+            .fw-tab-add { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px dashed var(--teal-light); background: var(--teal-pale); color: var(--teal-dark); display: flex; align-items: center; justify-content: center; cursor: pointer; }
             .fw-bucket-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-            .fw-bucket-idx {
-              width: 30px; height: 36px; display: flex; align-items: center; justify-content: center;
-              background: var(--teal-pale); border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--teal-dark); flex: none;
-            }
+            .fw-bucket-idx { width: 30px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--teal-pale); border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--teal-dark); flex: none; }
             .fw-bucket-input { flex: 1; border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; font-size: 16px; font-family: inherit; }
             .fw-bucket-input:focus { outline: none; border-color: var(--teal-light); box-shadow: 0 0 0 3px var(--teal-pale); }
             .fw-bucket-unit { font-size: 12.5px; color: var(--ink-soft); flex: none; width: 24px; }
-            
-            .fw-icon-sm {
-              width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
-              background: #fff; color: var(--danger); display: flex; align-items: center; justify-content: center;
-              cursor: pointer; flex: none;
-            }
-            .fw-add-bucket-btn {
-              width: 100%; padding: 10px; border-radius: 9px; border: 1px dashed var(--teal-light);
-              background: #fff; color: var(--teal-dark); font-size: 14px; font-weight: 600; cursor: pointer;
-              display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px;
-            }
-            
+            .fw-icon-sm { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--danger); display: flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
+            .fw-add-bucket-btn { width: 100%; padding: 10px; border-radius: 9px; border: 1px dashed var(--teal-light); background: #fff; color: var(--teal-dark); font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; }
             .fw-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
             .fw-stat { background: var(--bg); border-radius: 10px; padding: 9px 11px; }
             .fw-stat-label { font-size: 11.5px; color: var(--ink-soft); }
             .fw-stat-value { font-size: 17px; font-weight: 700; color: var(--ink); margin-top: 1px; }
             .fw-set-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
             .fw-remove-set { font-size: 12.5px; color: var(--danger); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 3px; margin-top: 2px; }
-            
-            .fw-summary-bar {
-              position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px;
-              background: var(--teal-dark); color: #fff; padding: 12px 16px 20px;
-              border-radius: 16px 16px 0 0; display: flex; justify-content: space-around; align-items: center;
-              box-shadow: 0 -4px 10px rgba(0,0,0,0.1); z-index: 10;
-            }
+            .fw-summary-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--teal-dark); color: #fff; padding: 12px 16px 20px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); z-index: 10; }
             .fw-summary-item { text-align: center; }
             .fw-summary-label { font-size: 10.5px; opacity: 0.8; }
             .fw-summary-value { font-size: 16px; font-weight: 700; margin-top: 1px; color: var(--teal-pale); }
-            
-            .fw-toast {
-              position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-              background: var(--teal-dark); color: #fff; padding: 12px 24px; border-radius: 99px;
-              font-size: 14.5px; font-weight: 600; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            }
-            
-            .fw-drawer-overlay {
-              position: fixed; inset: 0; background: rgba(10,20,18,0.6); z-index: 40;
-              display: flex; align-items: flex-end; justify-content: center;
-            }
-            .fw-drawer {
-              background: #fff; width: 100%; max-width: 480px; border-radius: 18px 18px 0 0;
-              max-height: 85vh; overflow-y: auto; padding: 16px;
-            }
+            .fw-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: var(--teal-dark); color: #fff; padding: 12px 24px; border-radius: 99px; font-size: 14.5px; font-weight: 600; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+            .fw-drawer-overlay { position: fixed; inset: 0; background: rgba(10,20,18,0.6); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
+            .fw-drawer { background: #fff; width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; max-height: 85vh; overflow-y: auto; padding: 16px; }
             .fw-drawer-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-            .fw-record-row {
-              display: flex; justify-content: space-between; align-items: center;
-              padding: 11px 4px; border-bottom: 1px solid var(--border);
-            }
+            .fw-record-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 4px; border-bottom: 1px solid var(--border); }
             .fw-record-label { font-size: 14px; font-weight: 600; }
             .fw-record-meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
             .fw-record-btns { display: flex; gap: 6px; }
-            
-            .fw-btn-primary {
-              width: 100%; padding: 14px; border-radius: 12px; border: none;
-              background: var(--teal-light); color: #fff; font-size: 16px; font-weight: 700;
-              display: flex; align-items: center; justify-content: center; gap: 8px;
-              cursor: pointer; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(126,174,83,0.3);
-            }
+            .fw-btn-primary { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--teal-light); color: #fff; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(126,174,83,0.3); }
             .fw-btn-primary:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(126,174,83,0.3); }
-            
-            .fw-btn-secondary {
-              width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
-              background: #fff; color: var(--ink-soft); font-size: 14px; font-weight: 600;
-              display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; margin-bottom: 12px;
-            }
-
-            .fw-report-overlay {
-              position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100;
-              overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; padding: 16px 8px;
-            }
-            .fw-print-sheet {
-              background: #fff; width: 100%; max-width: 600px; border-radius: 12px;
-              padding: 24px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); color: #111; font-size: 13.5px;
-            }
+            .fw-btn-secondary { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: #fff; color: var(--ink-soft); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; margin-bottom: 12px; }
+            .fw-report-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; padding: 16px 8px; }
+            .fw-print-sheet { background: #fff; width: 100%; max-width: 600px; border-radius: 12px; padding: 24px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); color: #111; font-size: 13.5px; }
             .fw-print-table { width: 100%; border-collapse: collapse; margin-top: 12px; margin-bottom: 14px; }
             .fw-print-table th, .fw-print-table td { border: 1px solid #ddd; padding: 8px 6px; text-align: center; font-size: 12.5px; }
             .fw-print-table th { background-color: var(--teal-pale); font-weight: 700; color: var(--teal-dark); }
@@ -599,7 +412,6 @@
 
           {status && <div className="fw-toast">{status}</div>}
 
-          {/* Modal: ใบสรุปรายงานสำหรับพิมพ์ / บันทึก PDF */}
           {viewReport && (
             <div className="fw-report-overlay" onClick={() => setViewReport(null)}>
               <div className="fw-print-sheet" onClick={(e) => e.stopPropagation()}>
@@ -612,10 +424,14 @@
                   </button>
                 </div>
                 
-                {/* ดึงไฟล์รูปจากชื่อไฟล์ปกติ */}
                 <div style={{ textAlign: 'center', borderBottom: '2px solid var(--teal-dark)', paddingBottom: 10 }}>
                   <img src="farm-logo.jpg" alt="Boonchai Group Logo" style={{ height: '70px', objectFit: 'contain', marginBottom: '8px' }} />
                   <h2 style={{ margin: 0, fontSize: 20, color: '#0A443C' }}>ใบสรุปรายการชั่งลูกปลา</h2>
+                  {viewReport.farm && (
+                    <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>
+                      {viewReport.farm.address1} {viewReport.farm.address2} {viewReport.farm.branch ? `(สาขา: ${viewReport.farm.branch})` : ''}
+                    </div>
+                  )}
                   <div style={{ fontSize: 13, fontWeight: 600, marginTop: 6, color: '#0E5C52' }}>
                     วันที่: {viewReport.dateStr}
                   </div>
@@ -640,12 +456,8 @@
                         <td>{i + 1}</td>
                         <td style={{ fontWeight: 600 }}>{s.pond || "-"}</td>
                         <td>{s.batch || "-"}</td>
-                        <td style={{ fontSize: 11 }}>
-                          {s.transportName || "-"} {s.plate ? `(${s.plate})` : ''}
-                        </td>
-                        <td style={{ fontSize: 11, textAlign: 'left' }}>
-                          {(s.buckets || []).filter(b => num(b.weight) > 0).map(b => b.weight).join(', ')} ({s.bucketCount} ถัง)
-                        </td>
+                        <td style={{ fontSize: 11 }}>{s.transportName || "-"} {s.plate ? `(${s.plate})` : ''}</td>
+                        <td style={{ fontSize: 11, textAlign: 'left' }}>{(s.buckets || []).filter(b => num(b.weight) > 0).map(b => b.weight).join(', ')} ({s.bucketCount} ถัง)</td>
                         <td style={{ fontWeight: 700 }}>{fmt(s.netKg)}</td>
                         <td>{s.sizeGram ? fmt(s.sizeGram, 1) : '-'}</td>
                         <td style={{ fontWeight: 700 }}>{fmt(s.fishCount, 0)}</td>
@@ -689,12 +501,11 @@
             </div>
           )}
 
-          {/* Drawer: ประวัติการบันทึกทั้งหมด */}
           {showHistory && (
             <div className="fw-drawer-overlay" onClick={() => setShowHistory(false)}>
               <div className="fw-drawer" onClick={(e) => e.stopPropagation()}>
                 <div className="fw-drawer-head">
-                  <span style={{ fontWeight: 700, fontSize: 16 }}>ประวัติที่บันทึกไว้ทั้งหมด</span>
+                  <span style={{ fontWeight: 700, fontSize: 16 }}>ประวัติที่บันทึกไว้ทั้งหมดในเครื่อง</span>
                   <button className="fw-icon-btn" style={{ background: "rgba(0,0,0,0.05)", color: "var(--ink)" }} onClick={() => setShowHistory(false)}>
                     <IconX size={18} />
                   </button>
@@ -715,7 +526,6 @@
             </div>
           )}
 
-          {/* Drawer: สรุปยอดรวม (เรียงตามวัน) */}
           {showDaily && (
             <div className="fw-drawer-overlay" onClick={() => setShowDaily(false)}>
               <div className="fw-drawer" onClick={(e) => e.stopPropagation()}>
@@ -761,10 +571,8 @@
             </div>
           )}
 
-          {/* ส่วนหัวกระดาษแอปพลิเคชัน พร้อมโลโก้ด้านซ้าย */}
           <div className="fw-header">
             <div className="fw-header-top">
-              
               <div className="fw-header-left">
                 {mainTab !== 'home' && (
                   <button onClick={() => setMainTab('home')} className="fw-icon-btn" style={{ marginRight: '8px' }}>
@@ -772,7 +580,6 @@
                   </button>
                 )}
                 
-                {/* โลโก้ในแบนเนอร์ */}
                 <img src="farm-logo.jpg" alt="Boonchai Logo" className="fw-logo-box" />
                 
                 <div>
@@ -780,16 +587,13 @@
                   <p className="fw-subtitle">บูรณ์ชัยกรุ๊ป</p>
                 </div>
               </div>
-
               <div style={{ display: "flex", gap: 6 }}>
                 <button className="fw-icon-btn" onClick={() => setShowDaily(true)} aria-label="สรุป"><IconClipboardList size={18} /></button>
                 <button className="fw-icon-btn" onClick={() => setShowHistory(true)} aria-label="ประวัติ"><IconHistory size={18} /></button>
               </div>
-              
             </div>
           </div>
 
-          {/* หน้าหลัก (Home Screen) ตอนนี้ไม่มีรายละเอียดและไม่มีโลโก้ซ้ำซ้อนแล้วครับ */}
           {mainTab === 'home' && (
             <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '10px' }}>
               
@@ -811,7 +615,6 @@
             </div>
           )}
 
-          {/* แท็บ: สุ่มไซส์ปลา */}
           {mainTab === 'sample' && (
             <div className="fw-section" style={{ paddingBottom: '30px' }}>
               <div className="fw-card">
@@ -842,9 +645,26 @@
             </div>
           )}
 
-          {/* แท็บ: บันทึกใบชั่ง */}
           {mainTab === 'weighing' && (
             <div className="fw-section">
+              <div className="fw-card">
+                <p className="fw-card-title">ข้อมูลฟาร์ม / สาขา</p>
+                <div className="fw-field">
+                  <label>ที่อยู่จัดส่ง</label>
+                  <input value={farm.address1} onChange={(e) => updateFarm({ address1: e.target.value })} placeholder="หมู่ / ตำบล" />
+                </div>
+                <div className="fw-grid2">
+                  <div className="fw-field">
+                    <label>อำเภอ / จังหวัด</label>
+                    <input value={farm.address2} onChange={(e) => updateFarm({ address2: e.target.value })} placeholder="อ.เมือง จ.อุตรดิตถ์" />
+                  </div>
+                  <div className="fw-field">
+                    <label>สาขา</label>
+                    <input value={farm.branch} onChange={(e) => updateFarm({ branch: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+
               <div className="fw-card">
                 <div className="fw-set-header">
                   <p className="fw-card-title" style={{ margin: 0 }}>ชุดการชั่ง</p>
@@ -976,7 +796,6 @@
             </div>
           )}
 
-          {/* แถบสรุปผลล่างสุด (ซ่อนเมื่ออยู่หน้าแรก) */}
           {mainTab !== 'home' && (
             <div className="fw-summary-bar">
               <div className="fw-summary-item">
@@ -998,8 +817,71 @@
       );
     }
 
+    // --- ส่วนหน้าเข้าสู่ระบบ (PIN) ---
+    function AppWrapper() {
+      const [isAuth, setIsAuth] = useState(false);
+      const [pin, setPin] = useState("");
+      const [error, setError] = useState("");
+
+      useEffect(() => {
+        // เช็คใน session ว่าเคยกรอกถูกแล้วหรือยังในหน้าต่างนี้
+        const auth = sessionStorage.getItem("farm_auth");
+        if (auth === "888") {
+          setIsAuth(true);
+        }
+      }, []);
+
+      const handleLogin = () => {
+        if (pin === "888") {
+          setIsAuth(true);
+          sessionStorage.setItem("farm_auth", "888");
+        } else {
+          setError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่");
+          setPin("");
+        }
+      };
+
+      if (!isAuth) {
+        return (
+          <div className="fw-root" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px', "--teal": "#090909", "--teal-dark": "#0A443C", "--teal-light": "#7EAE53", "--teal-pale": "#E8F4DA", "--bg": "#F4F8F6" }}>
+             <style>{`
+               .fw-root * { box-sizing: border-box; }
+               .fw-root { font-family: 'Sarabun', -apple-system, sans-serif; background: var(--bg); color: #16302B; max-width: 480px; margin: 0 auto; }
+               .pin-input { width: 100%; max-width: 250px; padding: 12px; font-size: 28px; text-align: center; border: 2px solid var(--teal-light); border-radius: 12px; margin-bottom: 16px; letter-spacing: 8px; color: var(--teal-dark); background: #fff;}
+               .pin-input:focus { outline: none; box-shadow: 0 0 0 3px var(--teal-pale); }
+               .pin-btn { background: var(--teal-dark); color: #fff; border: none; padding: 14px 32px; font-size: 18px; font-weight: 700; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 6px rgba(10,68,60,0.2); transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+               .pin-btn:active { transform: translateY(2px); }
+             `}</style>
+             
+             <img src="farm-logo.jpg" alt="Boonchai Logo" style={{ width: '180px', borderRadius: '16px', marginBottom: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+             
+             <h2 style={{ color: 'var(--teal-dark)', margin: '0 0 8px 0', fontSize: '24px' }}>เข้าสู่ระบบ</h2>
+             <p style={{ color: '#5C7570', marginBottom: '24px', fontSize: '15px' }}>กรุณากรอกรหัส PIN ก่อนเข้าใช้งาน</p>
+             
+             <input 
+               type="password" 
+               inputMode="numeric"
+               className="pin-input" 
+               value={pin} 
+               onChange={(e) => setPin(e.target.value)} 
+               placeholder="***"
+               onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+             />
+             
+             {error && <p style={{ color: '#C1553D', marginTop: '0', marginBottom: '16px', fontSize: '14px', fontWeight: 600 }}>{error}</p>}
+             
+             <button className="pin-btn" onClick={handleLogin}>
+               <IconLock size={20} /> เข้าสู่ระบบ
+             </button>
+          </div>
+        );
+      }
+
+      return <FishWeighingApp />;
+    }
+
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<FishWeighingApp />);
+    root.render(<AppWrapper />);
   </script>
 </body>
 </html>
