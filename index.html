@@ -57,11 +57,37 @@
     // -----------------------------------------------------------------------------
     const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbwFI0rr2UjhYey67NiXR9K_1NAihlmQjwUkXl_pCJbVMoQfxtSijhEhGGmFszyr1oki/exec"; 
 
-    const storage = {
-      get: async (key) => ({ value: localStorage.getItem(key) }),
-      set: async (key, value) => localStorage.setItem(key, value),
-      delete: async (key) => localStorage.removeItem(key)
-    };
+  const storage = {
+  get: async (key) => {
+    try {
+      const res = await fetch(`${GOOGLE_SHEET_API_URL}?action=get&key=${encodeURIComponent(key)}`);
+      const data = await res.json();
+      return { value: data.value };
+    } catch (e) {
+      return { value: localStorage.getItem(key) };
+    }
+  },
+  set: async (key, value) => {
+    localStorage.setItem(key, value);
+    try {
+      await fetch(GOOGLE_SHEET_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'set', key, value })
+      });
+    } catch (e) {}
+  },
+  delete: async (key) => {
+    localStorage.removeItem(key);
+    try {
+      await fetch(GOOGLE_SHEET_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'delete', key })
+      });
+    } catch (e) {}
+  }
+};
 
     const THAI_MONTHS = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
     const uid = () => Math.random().toString(36).slice(2, 9);
