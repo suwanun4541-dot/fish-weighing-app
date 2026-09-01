@@ -1,1008 +1,130 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>บันทึกการชั่งลูกปลา - บูรณ์ชัยกรุ๊ป</title>
-  
-  <!-- โหลดฟอนต์ภาษาไทย Sarabun -->
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- โหลด React และ Babel -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+// --------- Code.gs ---------
+const REPORT_SHEET_NAME = "รายงาน"; 
+const MORTALITY_SHEET_NAME = "ปลาตาย";
+const KV_SHEET_NAME = "Records";
 
-  <style>
-    body { margin: 0; padding: 0; background-color: #F4F8F6; }
-    canvas { touch-action: none; }
-
-    @media print {
-      body * { visibility: hidden; }
-      .fw-print-sheet, .fw-print-sheet * { visibility: visible; }
-      .fw-print-sheet {
-        position: absolute; left: 0; top: 0; width: 100% !important; max-width: 100% !important;
-        margin: 0 !important; padding: 20px !important; box-shadow: none !important;
-        border: none !important; background: #fff !important;
-      }
-      .no-print { display: none !important; }
-    }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-
-  <script type="text/babel">
-    const { useState, useEffect, useRef, useCallback, useMemo } = React;
-
-    // --- ส่วนของไอคอน ---
-    const IconSave = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>;
-    const IconHistory = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>;
-    const IconClipboardList = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>;
-    const IconPlus = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
-    const IconMinus = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
-    const IconTrash2 = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
-    const IconX = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
-    const IconRefreshCcw = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>;
-    const IconPrinter = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>;
-    const IconArrowRight = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
-    const IconArrowLeft = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
-    const IconFish = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.46-3.44 6-7 6-3.56 0-7.56-2.54-8.5-6Z"></path><path d="M18 12v.01"></path><path d="M11.5 10.5c-1 0-2 1-2 2s1 2 2 2"></path><path d="M6.5 12c-2.3 0-3.5-1-4.5-2C1 9 1 7 1 7s2 0 3 1c1 1 2.2 2 2.5 4Z"></path><path d="M6.5 12c-2.3 0-3.5 1-4.5 2C1 15 1 17 1 17s2 0 3-1c1-1 2.2-2 2.5-4Z"></path></svg>;
-    const IconBook = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path><path d="M8 7h6"></path><path d="M8 11h8"></path></svg>;
-    const IconLock = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
-    const IconCheckSquare = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>;
-
-    // -----------------------------------------------------------------------------
-    // ⭐ นำ Web App URL ที่ได้จาก Google Apps Script มาใส่ในเครื่องหมายคำพูดด้านล่างนี้เลยครับ
-    // -----------------------------------------------------------------------------
-    const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbwFI0rr2UjhYey67NiXR9K_1NAihlmQjwUkXl_pCJbVMoQfxtSijhEhGGmFszyr1oki/exec"; 
-
-  const storage = {
-  get: async (key) => {
-    try {
-      const res = await fetch(`${GOOGLE_SHEET_API_URL}?action=get&key=${encodeURIComponent(key)}`);
-      const data = await res.json();
-      return { value: data.value };
-    } catch (e) {
-      return { value: localStorage.getItem(key) };
-    }
-  },
-  set: async (key, value) => {
-    localStorage.setItem(key, value);
-    try {
-      await fetch(GOOGLE_SHEET_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'set', key, value })
-      });
-    } catch (e) {}
-  },
-  delete: async (key) => {
-    localStorage.removeItem(key);
-    try {
-      await fetch(GOOGLE_SHEET_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'delete', key })
-      });
-    } catch (e) {}
+function getOrCreateSheet(name, headerRow) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    if (headerRow) sheet.appendRow(headerRow);
   }
-};
-
-    const THAI_MONTHS = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
-    const uid = () => Math.random().toString(36).slice(2, 9);
-
-    const todayDefaults = () => {
-      const d = new Date();
-      return { day: String(d.getDate()), month: THAI_MONTHS[d.getMonth()], year: String(d.getFullYear() + 543) };
-    };
-
-    const num = (v) => {
-      const n = parseFloat(v);
-      return Number.isFinite(n) ? n : 0;
-    };
-
-    const fmt = (v, digits = 2) => {
-      const n = num(v);
-      if (!Number.isFinite(n)) return "0";
-      return n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: digits });
-    };
-
-    const newBucket = () => ({ id: uid(), weight: "" });
-    const newSet = (index) => ({ 
-      id: uid(), pond: "", batch: "", sizeGram: "", transportName: "", plate: "", farmerSig: "", transportSig: "", showSignature: false, ...todayDefaults(), buckets: [newBucket()] 
-    });
-
-    const emptyState = () => ({
-      farm: { address1: "", address2: "", batch: "", branch: "" },
-      sample: { counted: "", weighedKg: "" },
-      waterPerBucketKg: "5", deductPercent: "2", note: "", sets: [newSet(1)],
-    });
-
-    const calcSet = (set, waterPerBucketKg, deductPercent) => {
-      const gross = (set.buckets || []).reduce((s, b) => s + num(b.weight), 0);
-      const bucketCount = (set.buckets || []).filter((b) => num(b.weight) > 0).length;
-      const waterDeducted = bucketCount * num(waterPerBucketKg);
-      const afterBucketWater = Math.max(0, gross - waterDeducted);
-      const net = afterBucketWater * (1 - num(deductPercent) / 100);
-      const size = num(set.sizeGram);
-      const fishCount = size > 0 ? (net * 1000) / size : 0;
-      return { gross, bucketCount, waterDeducted, afterBucketWater, net, fishCount };
-    };
-
-    const setLabel = (set) => {
-      if (set.pond || set.batch) return `บ่อ/กระชัง ${set.pond || "-"}${set.batch ? " รุ่น " + set.batch : ""}`;
-      return "ใบชั่งใหม่";
-    };
-
-    const SignaturePad = ({ label, value, onChange }) => {
-      const canvasRef = useRef(null);
-      const [isDrawing, setIsDrawing] = useState(false);
-      const hasLoaded = useRef(false); 
-
-      useEffect(() => {
-        if (value && canvasRef.current && !hasLoaded.current) {
-          const canvas = canvasRef.current;
-          const ctx = canvas.getContext('2d');
-          const img = new Image();
-          img.onload = () => { ctx.drawImage(img, 0, 0); };
-          img.src = value;
-          hasLoaded.current = true;
-        }
-      }, [value]);
-
-      const start = (e) => { setIsDrawing(true); draw(e); };
-      const stop = () => {
-        setIsDrawing(false);
-        if (canvasRef.current) {
-          canvasRef.current.getContext('2d').beginPath();
-          onChange(canvasRef.current.toDataURL('image/png'));
-        }
-      };
-      
-      const draw = (e) => {
-        if (!isDrawing) return;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-        ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.strokeStyle = "#16302B";
-        ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
-      };
-
-      const clear = (e) => {
-        e.preventDefault();
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        hasLoaded.current = false;
-        onChange(""); 
-      };
-
-      return (
-        <div style={{ border: "1px solid var(--border)", borderRadius: 10, background: "#fff", padding: "8px 8px 12px", position: 'relative' }}>
-          <div style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 6, fontWeight: 600 }}>{label}</div>
-          <canvas ref={canvasRef} width={200} height={100} style={{ width: '100%', height: '80px', border: '1px dashed var(--border)', borderRadius: 6, background: 'var(--bg)' }} onPointerDown={start} onPointerMove={draw} onPointerUp={stop} onPointerOut={stop} />
-          <button onClick={clear} style={{ position: 'absolute', top: 6, right: 8, fontSize: 11, background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}>ล้าง</button>
-          <div style={{ borderBottom: '1px solid var(--ink)', width: '80%', margin: '14px auto 0', opacity: 0.3 }}></div>
-        </div>
-      );
-    };
-
-    function FishWeighingApp() {
-      const [state, setState] = useState(emptyState());
-      const [activeIdx, setActiveIdx] = useState(0);
-      const [mainTab, setMainTab] = useState('home'); 
-      const [showHistory, setShowHistory] = useState(false);
-      const [showDaily, setShowDaily] = useState(false);
-      const [records, setRecords] = useState([]);
-      
-      const [selectedPrint, setSelectedPrint] = useState({});
-      const [status, setStatus] = useState("");
-      const [loaded, setLoaded] = useState(false);
-      const [viewReport, setViewReport] = useState(null);
-      const saveTimer = useRef(null);
-
-      const { farm, sample, waterPerBucketKg, deductPercent, note, sets } = state;
-
-      const update = (patch) => setState((s) => ({ ...s, ...patch }));
-      const updateFarm = (patch) => setState((s) => ({ ...s, farm: { ...s.farm, ...patch } }));
-      const updateSample = (patch) => setState((s) => ({ ...s, sample: { ...s.sample, ...patch } }));
-
-      useEffect(() => {
-        const initialSelect = {};
-        records.forEach(r => {
-          (r.sets || []).forEach(s => {
-            initialSelect[s.id] = true;
-          });
-        });
-        setSelectedPrint(initialSelect);
-      }, [records]);
-
-      const togglePrintSelect = (id) => {
-        setSelectedPrint(prev => ({ ...prev, [id]: !prev[id] }));
-      };
-
-      const togglePrintSelectAll = (groupSets, isSelected) => {
-        const next = { ...selectedPrint };
-        groupSets.forEach(s => next[s.id] = isSelected);
-        setSelectedPrint(next);
-      };
-
-      useEffect(() => {
-        (async () => {
-          try {
-            const r = await storage.get("session:current");
-            if (r && r.value) setState((s) => ({ ...s, ...JSON.parse(r.value) }));
-          } catch (e) {}
-          setLoaded(true);
-        })();
-      }, []);
-
-      useEffect(() => {
-        if (!loaded) return;
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(async () => {
-          try { await storage.set("session:current", JSON.stringify(state)); } catch (e) {}
-        }, 800);
-        return () => clearTimeout(saveTimer.current);
-      }, [state, loaded]);
-
-      const loadRecords = useCallback(async () => {
-        try {
-          const idx = await storage.get("records:index");
-          const list = idx && idx.value ? JSON.parse(idx.value) : [];
-          setRecords(list.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0)));
-        } catch (e) { setRecords([]); }
-      }, []);
-
-      useEffect(() => { if (showHistory || showDaily) loadRecords(); }, [showHistory, showDaily, loadRecords]);
-
-      const sampleNetKg = Math.max(0, num(sample.weighedKg) - num(waterPerBucketKg));
-      const perFishGram = sample.counted && sampleNetKg > 0 ? (sampleNetKg * 1000) / num(sample.counted) : 0;
-
-      const allCalc = sets.map((s) => calcSet(s, waterPerBucketKg, deductPercent));
-      const grandNetKg = allCalc.reduce((s, c) => s + c.net, 0);
-      const grandFishCount = allCalc.reduce((s, c) => s + c.fishCount, 0);
-      const grandBuckets = allCalc.reduce((s, c) => s + c.bucketCount, 0);
-
-      const addSet = () => { update({ sets: [...sets, newSet(sets.length + 1)] }); setActiveIdx(sets.length); };
-      const removeSet = (id) => {
-        if (sets.length <= 1) return;
-        const idx = sets.findIndex((s) => s.id === id);
-        const next = sets.filter((s) => s.id !== id);
-        update({ sets: next }); setActiveIdx(Math.max(0, Math.min(idx, next.length - 1)));
-      };
-      const patchSet = (id, patch) => update({ sets: sets.map((s) => (s.id === id ? { ...s, ...patch } : s)) });
-      const addBucket = (setId) => update({ sets: sets.map((s) => (s.id === setId ? { ...s, buckets: [...s.buckets, newBucket()] } : s)) });
-      const removeBucket = (setId, bucketId) => {
-        update({ sets: sets.map((s) => s.id === setId ? { ...s, buckets: s.buckets.length > 1 ? s.buckets.filter((b) => b.id !== bucketId) : s.buckets } : s ) });
-      };
-      const patchBucket = (setId, bucketId, weight) => update({ sets: sets.map((s) => s.id === setId ? { ...s, buckets: s.buckets.map((b) => (b.id === bucketId ? { ...b, weight } : b)) } : s ) });
-
-      const saveRecord = async () => {
-        try {
-          setStatus("กำลังบันทึกข้อมูล...");
-          const id = uid();
-          const label = `บันทึกเวลา ${new Date().toLocaleTimeString("th-TH", {hour: '2-digit', minute:'2-digit'})}`;
-          const totalNetKg = allCalc.reduce((sum, c) => sum + c.net, 0);
-          const totalFishCount = allCalc.reduce((sum, c) => sum + c.fishCount, 0);
-
-          await storage.set(`records:${id}`, JSON.stringify(state));
-          const idxRes = await storage.get("records:index").catch(() => null);
-          const list = idxRes && idxRes.value ? JSON.parse(idxRes.value) : [];
-          
-          list.push({ key: id, label, savedAt: Date.now(), farm, sets: sets, totalNetKg, totalFishCount, waterPerBucketKg, deductPercent, note });
-          await storage.set("records:index", JSON.stringify(list));
-
-          if (GOOGLE_SHEET_API_URL && GOOGLE_SHEET_API_URL.length > 10) {
-            const rowsToSave = sets.map((s) => {
-              const c = calcSet(s, waterPerBucketKg, deductPercent);
-              return {
-                dateStr: `${s.day || "-"} ${s.month || "-"} ${s.year || "-"}`,
-                timeStr: new Date().toLocaleTimeString("th-TH", {hour: '2-digit', minute:'2-digit'}),
-                branch: farm.branch || "-",
-                pond: s.pond || "-",
-                batch: s.batch || "-",
-                transport: s.transportName || "-",
-                plate: s.plate || "-",
-                bucketCount: c.bucketCount,
-                grossKg: c.gross,
-                waterDeducted: c.waterDeducted,
-                netKg: c.net,
-                sizeGram: s.sizeGram || "-",
-                fishCount: Math.round(c.fishCount),
-                note: note || "-"
-              };
-            });
-
-            fetch(GOOGLE_SHEET_API_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify({ rows: rowsToSave })
-            }).catch(err => console.error("Sheet sync error", err));
-          }
-          
-          setStatus("บันทึกข้อมูลเรียบร้อยแล้ว!");
-          setTimeout(() => { setStatus(""); setState(emptyState()); setActiveIdx(0); setMainTab('home'); }, 1500);
-        } catch (e) {
-          setStatus("บันทึกไม่สำเร็จ");
-          setTimeout(() => setStatus(""), 2000);
-        }
-      };
-
-      const loadRecord = async (key) => {
-        try {
-          const r = await storage.get(`records:${key}`);
-          if (r && r.value) { setState(JSON.parse(r.value)); setActiveIdx(0); setShowHistory(false); setMainTab('weighing'); }
-        } catch (e) {}
-      };
-
-      const deleteRecord = async (key) => {
-        try {
-          await storage.delete(`records:${key}`);
-          const idxRes = await storage.get("records:index").catch(() => null);
-          const list = idxRes && idxRes.value ? JSON.parse(idxRes.value) : [];
-          const next = list.filter((r) => r.key !== key);
-          await storage.set("records:index", JSON.stringify(next));
-          setRecords(next);
-        } catch (e) {}
-      };
-
-      const resetForm = () => {
-        if (!window.confirm("เคลียร์ข้อมูลทั้งหมดเพื่อเริ่มใบชั่งใหม่?")) return;
-        setState(emptyState()); setActiveIdx(0);
-      };
-
-      const allGroupedByDate = useMemo(() => {
-        const map = new Map();
-        const sortedRecords = [...records].reverse();
-
-        sortedRecords.forEach(record => {
-          (record.sets || []).forEach(set => {
-             const dateStr = `${set.day || "-"} ${set.month || "-"} ${set.year || "-"}`;
-             if (!map.has(dateStr)) {
-                map.set(dateStr, { dateStr, note: record.note, farm: record.farm, sets: [] });
-             }
-             const group = map.get(dateStr);
-             const c = calcSet(set, record.waterPerBucketKg || "5", record.deductPercent || "2");
-             
-             const slipNo = group.sets.length + 1; 
-
-             group.sets.push({ 
-                 ...set, 
-                 slipNo,
-                 grossKg: c.gross, 
-                 waterDeducted: c.waterDeducted, 
-                 netKg: c.net, 
-                 fishCount: c.fishCount, 
-                 bucketCount: c.bucketCount,
-                 note: record.note,
-                 farm: record.farm,
-                 farmerSig: set.farmerSig || record.farmerSig,
-                 transportSig: set.transportSig || record.transportSig
-             });
-          });
-        });
-        
-        const groups = Array.from(map.values()).reverse();
-        groups.forEach(g => {
-            g.sets.reverse();
-            g.totalNet = g.sets.reduce((sum, s) => sum + s.netKg, 0);
-            g.totalFish = g.sets.reduce((sum, s) => sum + s.fishCount, 0);
-            g.totalGross = g.sets.reduce((sum, s) => sum + s.grossKg, 0);
-            g.totalBuckets = g.sets.reduce((sum, s) => sum + s.bucketCount, 0);
-        });
-
-        return groups;
-      }, [records]);
-
-      const handlePrepareReport = (group) => {
-        const selected = group.sets.filter(s => selectedPrint[s.id]);
-        if (selected.length === 0) {
-            alert("กรุณาเลือกอย่างน้อย 1 ใบชั่งเพื่อพิมพ์");
-            return;
-        }
-
-        const totalGross = selected.reduce((sum, s) => sum + s.grossKg, 0);
-        const totalNet = selected.reduce((sum, s) => sum + s.netKg, 0);
-        const totalFish = selected.reduce((sum, s) => sum + s.fishCount, 0);
-        const totalBuckets = selected.reduce((sum, s) => sum + s.bucketCount, 0);
-        const totalWater = selected.reduce((sum, s) => sum + s.waterDeducted, 0);
-
-        const sortedSelected = [...selected].sort((a,b) => a.slipNo - b.slipNo);
-        const slipLabel = sortedSelected.map(s => String(s.slipNo).padStart(2, '0')).join(', ');
-        
-        // รวบรวมข้อมูลรถขนส่งทั้งหมดในใบนี้
-        const transportSet = new Set();
-        sortedSelected.forEach(s => {
-          let tName = s.transportName ? s.transportName.trim() : "";
-          let tPlate = s.plate ? `(${s.plate.trim()})` : "";
-          let combined = `${tName} ${tPlate}`.trim();
-          if (combined) {
-            transportSet.add(combined);
-          }
-        });
-        const transportInfo = Array.from(transportSet).join(', ');
-
-        setViewReport({
-            dateStr: group.dateStr,
-            farm: selected[0].farm || group.farm,
-            note: selected.find(s => s.note)?.note || group.note,
-            sets: sortedSelected, 
-            totalGross,
-            totalNet,
-            totalFish,
-            totalBuckets,
-            totalWater,
-            farmerSig: selected.find(s => s.farmerSig)?.farmerSig || "",
-            transportSig: selected.find(s => s.transportSig)?.transportSig || "",
-            slipLabel,
-            transportInfo
-        });
-      };
-
-      const active = sets[activeIdx] || sets[0];
-      const activeCalc = active ? calcSet(active, waterPerBucketKg, deductPercent) : null;
-
-      return (
-        <div style={{ "--teal": "#090909", "--teal-dark": "#0A443C", "--teal-light": "#7EAE53", "--teal-pale": "#E8F4DA", "--amber": "#D98C1F", "--amber-pale": "#FBEBD3", "--bg": "#F4F8F6", "--surface": "#FFFFFF", "--ink": "#16302B", "--ink-soft": "#5C7570", "--border": "#DCE8E3", "--danger": "#C1553D" }}
-          className="fw-root">
-          <style>{`
-            .fw-root * { box-sizing: border-box; }
-            .fw-root { font-family: 'Sarabun', -apple-system, sans-serif; background: var(--bg); color: var(--ink); max-width: 480px; margin: 0 auto; padding-bottom: 90px; min-height: 100vh; }
-            .fw-header { background: var(--teal-dark); color: #fff; padding: 24px 16px; border-radius: 0 0 20px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 10px; }
-            .fw-header-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-            .fw-logo-box { height: 55px; width: auto; border-radius: 8px; margin-right: 12px; background: #fff; padding: 3px; object-fit: contain; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-            .fw-header-left { display: flex; align-items: center; flex: 1; }
-            .fw-title { font-size: 24px; font-weight: 700; margin: 0; color: #fff; letter-spacing: -0.5px; line-height: 1.1; }
-            .fw-subtitle { font-size: 15px; margin: 4px 0 0; color: rgba(255,255,255,0.9); font-weight: 500; }
-            .fw-icon-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex: none; }
-            .fw-icon-btn:active { background: rgba(255,255,255,0.25); }
-            .fw-main-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 16px 0; }
-            .fw-main-tab-btn { padding: 12px; border-radius: 12px; border: none; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; }
-            .fw-main-tab-active { background: var(--teal-dark); color: #fff; box-shadow: 0 4px 10px rgba(10,68,60,0.25); }
-            .fw-main-tab-inactive { background: #fff; color: var(--ink-soft); box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-            .fw-section { padding: 14px 16px 0; }
-            .fw-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
-            .fw-card-title { font-size: 15px; font-weight: 700; color: var(--teal-dark); margin: 0 0 10px; display: flex; align-items: center; gap: 6px; }
-            .fw-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-            .fw-grid3 { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; }
-            .fw-field { margin-bottom: 8px; }
-            .fw-field label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; }
-            .fw-field input, .fw-field select { width: 100%; border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; font-size: 15px; font-family: inherit; background: #fff; color: var(--ink); }
-            .fw-field textarea { width: 100%; border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; font-size: 15px; font-family: inherit; background: #fff; color: var(--ink); resize: vertical; min-height: 80px; }
-            .fw-field input:focus, .fw-field select:focus, .fw-field textarea:focus { outline: none; border-color: var(--teal-light); box-shadow: 0 0 0 3px var(--teal-pale); }
-            .fw-result-box { background: var(--teal-pale); border-radius: 10px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; border: 1px solid rgba(126, 174, 83, 0.3); }
-            .fw-result-label { font-size: 12.5px; color: var(--teal-dark); font-weight: 500; }
-            .fw-result-value { font-size: 19px; font-weight: 700; color: var(--teal-dark); }
-            .fw-result-unit { font-size: 12px; font-weight: 400; margin-left: 3px; }
-            .fw-note { font-size: 11.5px; color: var(--ink-soft); margin-top: 6px; line-height: 1.4; }
-            .fw-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 4px; -webkit-overflow-scrolling: touch; }
-            .fw-tab { flex: none; padding: 8px 14px; border-radius: 999px; font-size: 13.5px; font-weight: 600; border: 1px solid var(--border); background: #fff; color: var(--ink-soft); cursor: pointer; white-space: nowrap; }
-            .fw-tab.active { background: var(--teal-dark); border-color: var(--teal-dark); color: #fff; }
-            .fw-tab-add { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px dashed var(--teal-light); background: var(--teal-pale); color: var(--teal-dark); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-            .fw-bucket-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-            .fw-bucket-idx { width: 30px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--teal-pale); border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--teal-dark); flex: none; }
-            .fw-bucket-input { flex: 1; border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; font-size: 16px; font-family: inherit; }
-            .fw-bucket-input:focus { outline: none; border-color: var(--teal-light); box-shadow: 0 0 0 3px var(--teal-pale); }
-            .fw-bucket-unit { font-size: 12.5px; color: var(--ink-soft); flex: none; width: 24px; }
-            .fw-icon-sm { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--danger); display: flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
-            .fw-add-bucket-btn { width: 100%; padding: 10px; border-radius: 9px; border: 1px dashed var(--teal-light); background: #fff; color: var(--teal-dark); font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; }
-            .fw-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-            .fw-stat { background: var(--bg); border-radius: 10px; padding: 9px 11px; }
-            .fw-stat-label { font-size: 11.5px; color: var(--ink-soft); }
-            .fw-stat-value { font-size: 17px; font-weight: 700; color: var(--ink); margin-top: 1px; }
-            .fw-set-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
-            .fw-remove-set { font-size: 12.5px; color: var(--danger); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 3px; margin-top: 2px; }
-            .fw-summary-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--teal-dark); color: #fff; padding: 12px 16px 20px; border-radius: 16px 16px 0 0; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -4px 10px rgba(0,0,0,0.1); z-index: 10; }
-            .fw-summary-item { text-align: center; }
-            .fw-summary-label { font-size: 10.5px; opacity: 0.8; }
-            .fw-summary-value { font-size: 16px; font-weight: 700; margin-top: 1px; color: var(--teal-pale); }
-            .fw-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: var(--teal-dark); color: #fff; padding: 12px 24px; border-radius: 99px; font-size: 14.5px; font-weight: 600; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-            .fw-drawer-overlay { position: fixed; inset: 0; background: rgba(10,20,18,0.6); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
-            .fw-drawer { background: #fff; width: 100%; max-width: 480px; border-radius: 18px 18px 0 0; max-height: 88vh; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; }
-            .fw-drawer-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex: none; }
-            .fw-record-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 4px; border-bottom: 1px solid var(--border); }
-            .fw-record-label { font-size: 14px; font-weight: 600; }
-            .fw-record-meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
-            .fw-record-btns { display: flex; gap: 6px; }
-            .fw-btn-primary { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--teal-light); color: #fff; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(126,174,83,0.3); }
-            .fw-btn-primary:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(126,174,83,0.3); }
-            .fw-btn-secondary { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: #fff; color: var(--ink-soft); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; margin-bottom: 12px; }
-            
-            .fw-checkbox { width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--teal-light); appearance: none; -webkit-appearance: none; outline: none; cursor: pointer; position: relative; background: #fff; margin: 0; }
-            .fw-checkbox:checked { background-color: var(--teal-light); }
-            .fw-checkbox:checked::after { content: ''; position: absolute; left: 6px; top: 2px; width: 4px; height: 10px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
-
-            .fw-report-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; padding: 16px 8px; }
-            .fw-print-sheet { background: #fff; width: 100%; max-width: 700px; border-radius: 12px; padding: 24px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); color: #111; font-size: 13.5px; }
-            .fw-print-table { width: 100%; border-collapse: collapse; margin-top: 12px; margin-bottom: 14px; }
-            .fw-print-table th, .fw-print-table td { border: 1px solid #ddd; padding: 8px 6px; text-align: center; font-size: 12.5px; vertical-align: middle; }
-            .fw-print-table th { background-color: var(--teal-pale); font-weight: 700; color: var(--teal-dark); }
-            .fw-print-sigbox { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; text-align: center; }
-            .fw-print-sigline { border-bottom: 1px dashed #666; margin: 0 auto 8px; width: 80%; }
-            .fw-print-sig-container { position: relative; height: 65px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 4px; }
-            .fw-print-sig-img { position: absolute; bottom: 5px; height: 75px; object-fit: contain; }
-            
-            /* ตกแต่งกล่องรายการน้ำหนักย่อย */
-            .fw-bucket-detail-box {
-               background: #fdfdfd; border: 1px solid #ddd; border-radius: 8px; padding: 12px 14px; margin-top: 16px;
-            }
-          `}</style>
-
-          {status && <div className="fw-toast">{status}</div>}
-
-          {/* Modal: ใบสรุปรายงานสำหรับพิมพ์ / บันทึก PDF */}
-          {viewReport && (
-            <div className="fw-report-overlay" onClick={() => setViewReport(null)}>
-              <div className="fw-print-sheet" onClick={(e) => e.stopPropagation()}>
-                <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, borderBottom: '1px solid #eee', paddingBottom: 10 }}>
-                  <button onClick={() => window.print()} style={{ background: 'var(--teal-light)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                    <IconPrinter size={16} /> สั่งพิมพ์ / บันทึกเป็น PDF
-                  </button>
-                  <button onClick={() => setViewReport(null)} style={{ background: '#f1f1f1', border: 'none', padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
-                    ปิด
-                  </button>
-                </div>
-                
-                <div style={{ textAlign: 'center', borderBottom: '2px solid var(--teal-dark)', paddingBottom: 10, position: 'relative' }}>
-                  <img src="farm-logo.jpg" alt="Boonchai Group Logo" style={{ height: '70px', objectFit: 'contain', marginBottom: '8px' }} />
-                  <h2 style={{ margin: 0, fontSize: 20, color: '#0A443C' }}>ใบส่งมอบ / สรุปรายการชั่งลูกปลา</h2>
-                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>เกษตรกร บูรณ์ชัยกรุ๊ป</div>
-                  {viewReport.farm && (
-                    <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>
-                      {viewReport.farm.address1} {viewReport.farm.address2} {viewReport.farm.branch ? `(สาขา: ${viewReport.farm.branch})` : ''}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 10, color: '#0E5C52', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <span>วันที่: {viewReport.dateStr}</span>
-                    <span style={{ fontSize: 13, color: 'var(--danger)', fontWeight: 700, background: 'var(--amber-pale)', padding: '2px 8px', borderRadius: 6 }}>
-                      ใบชั่งที่: {viewReport.slipLabel}
-                    </span>
-                  </div>
-                </div>
-
-                {/* ตารางหลักแบบกระชับ */}
-                <table className="fw-print-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '10%' }}>ใบชั่งที่</th>
-                      <th style={{ width: '12%' }}>บ่อ/กระชัง</th>
-                      <th style={{ width: '10%' }}>รุ่น</th>
-                      <th style={{ width: '10%' }}>จำนวนถัง</th>
-                      <th style={{ width: '13%' }}>นน.รวม (กก.)</th>
-                      <th style={{ width: '10%' }}>หักน้ำ (กก.)</th>
-                      <th style={{ width: '13%' }}>นน.สุทธิ (กก.)</th>
-                      <th style={{ width: '10%' }}>ไซส์ (กรัม)</th>
-                      <th style={{ width: '12%' }}>จำนวนตัว</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {viewReport.sets.map((s, i) => {
-                      return (
-                        <tr key={i}>
-                          <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{String(s.slipNo).padStart(2, '0')}</td>
-                          <td style={{ fontWeight: 600 }}>{s.pond || "-"}</td>
-                          <td>{s.batch || "-"}</td>
-                          <td style={{ fontWeight: 700 }}>{s.bucketCount}</td>
-                          <td style={{ fontWeight: 600 }}>{fmt(s.grossKg)}</td>
-                          <td style={{ fontWeight: 600, color: 'var(--danger)' }}>{fmt(s.waterDeducted)}</td>
-                          <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{fmt(s.netKg)}</td>
-                          <td>{s.sizeGram ? fmt(s.sizeGram, 1) : '-'}</td>
-                          <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{fmt(s.fishCount, 0)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ background: '#E8F4DA', fontWeight: 700 }}>
-                      <td colSpan="3" style={{ textAlign: 'right', color: '#0A443C' }}>รวม:</td>
-                      <td style={{ color: '#0A443C', textAlign: 'center' }}>{viewReport.totalBuckets}</td>
-                      <td style={{ color: '#0A443C' }}>{fmt(viewReport.totalGross)}</td>
-                      <td style={{ color: '#C1553D' }}>{fmt(viewReport.totalWater)}</td>
-                      <td style={{ color: '#0A443C', fontSize: 14 }}>{fmt(viewReport.totalNet)}</td>
-                      <td>-</td>
-                      <td style={{ color: '#0A443C', fontSize: 14 }}>{fmt(viewReport.totalFish, 0)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-
-                {/* รายละเอียดน้ำหนักแต่ละถัง (แยกไว้ด้านล่าง) */}
-                <div className="fw-bucket-detail-box">
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal-dark)', marginBottom: 8, borderBottom: '1px dashed #ccc', paddingBottom: 6 }}>
-                    รายละเอียดน้ำหนักแต่ละถัง (กก.)
-                  </div>
-                  {viewReport.sets.map((s, i) => {
-                    const validBuckets = (s.buckets || []).filter(b => num(b.weight) > 0).map(b => b.weight);
-                    if (validBuckets.length === 0) return null;
-                    return (
-                      <div key={i} style={{ fontSize: 12.5, marginBottom: 6, lineHeight: 1.6 }}>
-                        <strong style={{ color: 'var(--teal-dark)' }}>ใบชั่งที่ {String(s.slipNo).padStart(2, '0')}:</strong> {validBuckets.join(', ')} 
-                        <span style={{ color: 'var(--ink-soft)', marginLeft: 6 }}>(รวม {s.bucketCount} ถัง)</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {viewReport.note && (
-                  <div style={{ background: '#fafafa', border: '1px solid #eee', borderRadius: 6, padding: '8px 10px', fontSize: 12, marginTop: 16 }}>
-                    <strong>หมายเหตุ:</strong> {viewReport.note}
-                  </div>
-                )}
-                
-                <div className="fw-print-sigbox">
-                  <div>
-                    <div className="fw-print-sig-container">
-                      {viewReport.farmerSig && <img src={viewReport.farmerSig} className="fw-print-sig-img" />}
-                      <div className="fw-print-sigline"></div>
-                    </div>
-                    <div style={{ fontSize: 12.5, fontWeight: 600 }}>ลงชื่อ {viewReport.farmerSig ? '' : '....................................................'}</div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>( เกษตรกรผู้ส่งมอบ )</div>
-                  </div>
-                  <div>
-                    {/* เพิ่มชื่อรถและทะเบียนขนส่งไว้เหนือลายเซ็น */}
-                    <div style={{ color: '#C1553D', fontSize: '11px', fontWeight: 600, marginBottom: '4px', minHeight: '16px' }}>
-                      {viewReport.transportInfo ? `รถขนส่ง: ${viewReport.transportInfo}` : ''}
-                    </div>
-                    <div className="fw-print-sig-container" style={{ height: '45px' }}>
-                      {viewReport.transportSig && <img src={viewReport.transportSig} className="fw-print-sig-img" />}
-                      <div className="fw-print-sigline"></div>
-                    </div>
-                    <div style={{ fontSize: 12.5, fontWeight: 600 }}>ลงชื่อ {viewReport.transportSig ? '' : '....................................................'}</div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>( พนักงานขับรถ / ขนส่ง )</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Drawer: ประวัติการบันทึกทั้งหมด */}
-          {showHistory && (
-            <div className="fw-drawer-overlay" onClick={() => setShowHistory(false)}>
-              <div className="fw-drawer" onClick={(e) => e.stopPropagation()}>
-                <div className="fw-drawer-head">
-                  <span style={{ fontWeight: 700, fontSize: 16 }}>ประวัติที่บันทึกไว้ทั้งหมดในเครื่อง</span>
-                  <button className="fw-icon-btn" style={{ background: "rgba(0,0,0,0.05)", color: "var(--ink)" }} onClick={() => setShowHistory(false)}>
-                    <IconX size={18} />
-                  </button>
-                </div>
-                <div style={{ overflowY: 'auto', flex: 1, paddingRight: 4 }}>
-                  {records.length === 0 && <p style={{ color: "var(--ink-soft)", fontSize: 13.5 }}>ยังไม่มีบันทึกที่เก็บไว้</p>}
-                  {records.map((r) => (
-                    <div className="fw-record-row" key={r.key}>
-                      <div onClick={() => loadRecord(r.key)} style={{ cursor: "pointer", flex: 1 }}>
-                        <div className="fw-record-label">{r.label}</div>
-                        <div className="fw-record-meta">{fmt(r.totalNetKg)} กก. สุทธิ · {fmt(r.totalFishCount, 0)} ตัว</div>
-                      </div>
-                      <div className="fw-record-btns">
-                        <button className="fw-icon-sm" onClick={() => deleteRecord(r.key)}><IconTrash2 size={15} /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Drawer: สรุปยอดรวม (เรียงตามวัน พร้อม Checkbox) */}
-          {showDaily && (
-            <div className="fw-drawer-overlay" onClick={() => setShowDaily(false)}>
-              <div className="fw-drawer" onClick={(e) => e.stopPropagation()}>
-                <div className="fw-drawer-head">
-                  <span style={{ fontWeight: 700, fontSize: 16 }}>สรุปเพื่อพิมพ์รายงาน</span>
-                  <button className="fw-icon-btn" style={{ background: "rgba(0,0,0,0.05)", color: "var(--ink)" }} onClick={() => setShowDaily(false)}>
-                    <IconX size={18} />
-                  </button>
-                </div>
-                
-                <div style={{ overflowY: 'auto', flex: 1, paddingRight: 4 }}>
-                  {allGroupedByDate.length === 0 && <p style={{ color: "var(--ink-soft)", fontSize: 13.5 }}>ยังไม่มีข้อมูลใบชั่งที่บันทึกไว้</p>}
-                  
-                  {allGroupedByDate.map((group, idx) => {
-                    const allSelected = group.sets.every(s => selectedPrint[s.id]);
-                    const someSelected = group.sets.some(s => selectedPrint[s.id]);
-
-                    return (
-                      <div key={idx} style={{ marginBottom: 20, background: '#fff', border: '1px solid var(--border)', borderRadius: 12, padding: '12px' }}>
-                        <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--teal-dark)', borderBottom: '1.5px solid var(--teal-pale)', paddingBottom: 8, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span>วันที่ {group.dateStr}</span>
-                          <button 
-                            onClick={() => handlePrepareReport(group)}
-                            disabled={!someSelected}
-                            style={{ background: someSelected ? 'var(--teal-light)' : '#ccc', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: someSelected ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <IconPrinter size={13} /> พิมพ์ใบที่เลือก
-                          </button>
-                        </div>
-                        
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13, color: 'var(--ink-soft)' }}>
-                          <input 
-                            type="checkbox" 
-                            className="fw-checkbox"
-                            checked={allSelected} 
-                            onChange={(e) => togglePrintSelectAll(group.sets, e.target.checked)} 
-                          />
-                          <label style={{ fontWeight: 600, cursor: 'pointer' }} onClick={() => togglePrintSelectAll(group.sets, !allSelected)}>เลือกทั้งหมดในวันนี้</label>
-                        </div>
-
-                        {group.sets.map((row, i) => (
-                          <div className="fw-record-row" key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <input 
-                              type="checkbox" 
-                              className="fw-checkbox"
-                              checked={!!selectedPrint[row.id]} 
-                              onChange={() => togglePrintSelect(row.id)} 
-                              style={{ flex: 'none' }}
-                            />
-                            <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => togglePrintSelect(row.id)}>
-                              <div className="fw-record-label">ใบชั่ง #{String(row.slipNo).padStart(2,'0')} - บ่อ {row.pond || "-"}{row.batch ? " รุ่น " + row.batch : ""}</div>
-                              <div className="fw-record-meta">{row.transportName ? `รถ: ${row.transportName}` : ''} · {row.bucketCount} ถัง · {fmt(row.fishCount, 0)} ตัว</div>
-                            </div>
-                            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--teal-dark)', flex: 'none' }}>{fmt(row.netKg)} กก.</div>
-                          </div>
-                        ))}
-
-                        {(() => {
-                          const selectedInGroup = group.sets.filter(s => selectedPrint[s.id]);
-                          const selNet = selectedInGroup.reduce((sum, s) => sum + s.netKg, 0);
-                          const selFish = selectedInGroup.reduce((sum, s) => sum + s.fishCount, 0);
-                          
-                          if(selectedInGroup.length > 0) {
-                            return (
-                              <div className="fw-record-row" style={{ borderBottom: "none", marginTop: 6, background: 'var(--teal-pale)', borderRadius: 8, padding: '8px 10px' }}>
-                                <div className="fw-record-label" style={{ color: 'var(--teal-dark)' }}>รวมเฉพาะที่เลือก</div>
-                                <div style={{ textAlign: "right" }}>
-                                  <div style={{ fontWeight: 700, fontSize: 15, color: "var(--teal-dark)" }}>{fmt(selNet)} กก.</div>
-                                  <div className="fw-record-meta" style={{ color: 'var(--teal-dark)' }}>{fmt(selFish, 0)} ตัว</div>
-                                </div>
-                              </div>
-                            )
-                          }
-                          return null;
-                        })()}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="fw-header">
-            <div className="fw-header-top">
-              <div className="fw-header-left">
-                {mainTab !== 'home' && (
-                  <button onClick={() => setMainTab('home')} className="fw-icon-btn" style={{ marginRight: '8px' }}>
-                    <IconArrowLeft size={20} />
-                  </button>
-                )}
-                <img src="farm-logo.jpg" alt="Boonchai Logo" className="fw-logo-box" />
-                <div>
-                  <p className="fw-title">บันทึกการชั่งลูกปลา</p>
-                  <p className="fw-subtitle">บูรณ์ชัยกรุ๊ป</p>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                <button className="fw-icon-btn" onClick={() => setShowDaily(true)} aria-label="สรุป"><IconClipboardList size={18} /></button>
-                <button className="fw-icon-btn" onClick={() => setShowHistory(true)} aria-label="ประวัติ"><IconHistory size={18} /></button>
-              </div>
-            </div>
-          </div>
-
-          {mainTab === 'home' && (
-            <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '10px' }}>
-              <button 
-                onClick={() => setMainTab('sample')}
-                style={{ background: '#fff', border: '2px solid var(--teal-light)', borderRadius: '24px', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', cursor: 'pointer', boxShadow: '0 8px 16px rgba(10,68,60,0.08)' }}
-              >
-                <IconFish size={75} color="var(--teal-light)" />
-                <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--teal-dark)' }}>สุ่มไซส์ปลา</span>
-              </button>
-              
-              <button 
-                onClick={() => setMainTab('weighing')}
-                style={{ background: 'var(--teal-light)', border: 'none', borderRadius: '24px', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', cursor: 'pointer', boxShadow: '0 8px 16px rgba(126,174,83,0.3)' }}
-              >
-                <IconBook size={75} color="#fff" />
-                <span style={{ fontSize: '24px', fontWeight: 700, color: '#fff' }}>ใบชั่งปลา</span>
-              </button>
-            </div>
-          )}
-
-          {mainTab === 'sample' && (
-            <div className="fw-section" style={{ paddingBottom: '30px' }}>
-              <div className="fw-card">
-                <p className="fw-card-title">คำนวณน้ำหนักตัวปลาเฉลี่ย</p>
-                <div className="fw-grid2">
-                  <div className="fw-field"><label>นับได้ (ตัว)</label><input value={sample.counted} onChange={(e) => updateSample({ counted: e.target.value })} inputMode="numeric" placeholder="ตัวอย่าง: 128" /></div>
-                  <div className="fw-field"><label>ชั่งได้ ก่อนหักน้ำ (กิโล)</label><input value={sample.weighedKg} onChange={(e) => updateSample({ weighedKg: e.target.value })} inputMode="decimal" placeholder="ตัวอย่าง: 10" /></div>
-                </div>
-                <div className="fw-field" style={{ maxWidth: 150 }}>
-                  <label>หักน้ำ (กก.)</label>
-                  <input value={waterPerBucketKg} onChange={(e) => update({ waterPerBucketKg: e.target.value })} inputMode="decimal" />
-                </div>
-                <div className="fw-result-box" style={{ marginTop: 12 }}>
-                  <span className="fw-result-label" style={{ fontSize: 14 }}>ได้น้ำหนักเฉลี่ย:</span>
-                  <span className="fw-result-value" style={{ fontSize: 24, color: 'var(--teal-light)' }}>{fmt(perFishGram)}<span className="fw-result-unit" style={{ fontSize: 14, color: 'var(--teal-dark)' }}>กรัม / ตัว</span></span>
-                </div>
-                <p className="fw-note" style={{ textAlign: 'center', marginTop: 12 }}>
-                  (หักน้ำ {fmt(waterPerBucketKg)} กก. ออกจากน้ำหนักที่ชั่งได้ก่อนคำนวณ)
-                </p>
-              </div>
-              
-              <button 
-                onClick={() => setMainTab('weighing')} 
-                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--teal-light)', background: '#fff', color: 'var(--teal-light)', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', marginTop: '16px' }}
-              >
-                ไปหน้าบันทึกใบชั่งปลา <IconArrowRight size={18} />
-              </button>
-            </div>
-          )}
-
-          {mainTab === 'weighing' && (
-            <div className="fw-section">
-              <div className="fw-card">
-                <p className="fw-card-title">ข้อมูลฟาร์ม / สาขา</p>
-                <div className="fw-field"><label>ที่อยู่จัดส่ง</label><input value={farm.address1} onChange={(e) => updateFarm({ address1: e.target.value })} placeholder="หมู่ / ตำบล" /></div>
-                <div className="fw-grid2">
-                  <div className="fw-field"><label>อำเภอ / จังหวัด</label><input value={farm.address2} onChange={(e) => updateFarm({ address2: e.target.value })} placeholder="อ.เมือง จ.อุตรดิตถ์" /></div>
-                  <div className="fw-field"><label>สาขา</label><input value={farm.branch} onChange={(e) => updateFarm({ branch: e.target.value })} /></div>
-                </div>
-              </div>
-
-              <div className="fw-card">
-                <div className="fw-set-header">
-                  <p className="fw-card-title" style={{ margin: 0 }}>ชุดการชั่ง</p>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <div className="fw-field" style={{ margin: 0, width: 82 }}><label style={{ fontSize: 11 }}>หักน้ำ/ถัง (กก.)</label><input value={waterPerBucketKg} onChange={(e) => update({ waterPerBucketKg: e.target.value })} inputMode="decimal" /></div>
-                    <div className="fw-field" style={{ margin: 0, width: 72 }}><label style={{ fontSize: 11 }}>หักเพิ่ม (%)</label><input value={deductPercent} onChange={(e) => update({ deductPercent: e.target.value })} inputMode="decimal" /></div>
-                  </div>
-                </div>
-
-                <div className="fw-tabs">
-                  {sets.map((s, i) => <button key={s.id} className={`fw-tab ${i === activeIdx ? "active" : ""}`} onClick={() => setActiveIdx(i)}>{setLabel(s)}</button>)}
-                  <button className="fw-tab-add" onClick={addSet} aria-label="เพิ่มใบชั่ง"><IconPlus size={18} /></button>
-                </div>
-
-                {active && activeCalc && (
-                  <div style={{ marginTop: 10 }}>
-                    <div style={{ background: 'var(--bg)', padding: '10px 12px', borderRadius: 10, marginBottom: 12 }}>
-                      <div className="fw-grid2">
-                        <div className="fw-field"><label>ชื่อขนส่ง</label><input value={active.transportName || ""} onChange={(e) => patchSet(active.id, { transportName: e.target.value })} placeholder="ชื่อรถ/คนขับ" /></div>
-                        <div className="fw-field"><label>ทะเบียนรถ</label><input value={active.plate || ""} onChange={(e) => patchSet(active.id, { plate: e.target.value })} placeholder="เช่น 1กข 1234" /></div>
-                      </div>
-                      <div className="fw-grid3">
-                        <div className="fw-field"><label>วันที่</label><input value={active.day || ""} onChange={(e) => patchSet(active.id, { day: e.target.value })} inputMode="numeric" /></div>
-                        <div className="fw-field"><label>เดือน</label>
-                          <select value={active.month || ""} onChange={(e) => patchSet(active.id, { month: e.target.value })}>
-                            {THAI_MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
-                          </select>
-                        </div>
-                        <div className="fw-field"><label>ปี (พ.ศ.)</label><input value={active.year || ""} onChange={(e) => patchSet(active.id, { year: e.target.value })} inputMode="numeric" /></div>
-                      </div>
-                    </div>
-
-                    <div className="fw-grid2">
-                      <div className="fw-field"><label style={{ color: 'var(--teal-dark)', fontWeight: 700, fontSize: '13.5px' }}>บ่อ / กระชัง</label><input value={active.pond} onChange={(e) => patchSet(active.id, { pond: e.target.value })} placeholder="เช่น บ่อ 1 หรือ กระชัง 5" /></div>
-                      <div className="fw-field"><label style={{ color: 'var(--teal-dark)', fontWeight: 700, fontSize: '13.5px' }}>รุ่น</label><input value={active.batch} onChange={(e) => patchSet(active.id, { batch: e.target.value })} placeholder="เช่น ป3" /></div>
-                    </div>
-                    <div className="fw-field"><label style={{ color: 'var(--teal-dark)', fontWeight: 700, fontSize: '13.5px' }}>ขนาดไซส์ปลา (กรัม/ตัว)</label><input value={active.sizeGram} onChange={(e) => patchSet(active.id, { sizeGram: e.target.value })} inputMode="decimal" placeholder="นำน้ำหนักเฉลี่ยมาใส่ที่นี่ เช่น 25" /></div>
-
-                    {sets.length > 1 && <button className="fw-remove-set" onClick={() => removeSet(active.id)}><IconTrash2 size={13} /> ลบใบชั่งนี้</button>}
-
-                    <div style={{ marginTop: 12 }}>
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', paddingLeft: '2px' }}>
-                        <div style={{ width: '30px', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--teal-dark)' }}>ถังที่</div>
-                        <div style={{ flex: 1, fontSize: '12px', fontWeight: 700, color: 'var(--teal-dark)' }}>ระบุน้ำหนักก่อนหักน้ำ (กก.)</div>
-                      </div>
-
-                      {active.buckets.map((b, i) => (
-                        <div className="fw-bucket-row" key={b.id}>
-                          <div className="fw-bucket-idx">{i + 1}</div>
-                          <input className="fw-bucket-input" value={b.weight} onChange={(e) => patchBucket(active.id, b.id, e.target.value)} inputMode="decimal" placeholder="กรอกน้ำหนัก" />
-                          <span className="fw-bucket-unit">กก.</span>
-                          <button className="fw-icon-sm" onClick={() => removeBucket(active.id, b.id)} aria-label="ลบถัง"><IconMinus size={15} /></button>
-                        </div>
-                      ))}
-                      <button className="fw-add-bucket-btn" onClick={() => addBucket(active.id)}><IconPlus size={16} /> เพิ่มถัง</button>
-                    </div>
-
-                    <div className="fw-stat-grid">
-                      <div className="fw-stat"><div className="fw-stat-label">น้ำหนักรวม (ก่อนหักน้ำ)</div><div className="fw-stat-value">{fmt(activeCalc.gross)} กก.</div></div>
-                      <div className="fw-stat"><div className="fw-stat-label">จำนวนถัง</div><div className="fw-stat-value">{activeCalc.bucketCount} ถัง</div></div>
-                      <div className="fw-stat"><div className="fw-stat-label">น้ำหนักสุทธิ</div><div className="fw-stat-value" style={{ color: 'var(--teal-light)' }}>{fmt(activeCalc.net)} กก.</div></div>
-                      <div className="fw-stat"><div className="fw-stat-label">จำนวนตัว</div><div className="fw-stat-value" style={{ color: 'var(--teal-light)' }}>{fmt(activeCalc.fishCount, 0)} ตัว</div></div>
-                    </div>
-                    <p className="fw-note">หักน้ำ {activeCalc.bucketCount} ถัง × {fmt(waterPerBucketKg)} กก. = {fmt(activeCalc.waterDeducted)} กก. → เหลือ {fmt(activeCalc.afterBucketWater)} กก. → หักเพิ่ม {fmt(deductPercent, 1)}% → สุทธิ {fmt(activeCalc.net)} กก.</p>
-
-                    <div style={{ marginTop: 20, padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: 'var(--teal-dark)', fontWeight: 600 }}>
-                        <input 
-                          type="checkbox" 
-                          className="fw-checkbox"
-                          checked={active.showSignature || false} 
-                          onChange={(e) => {
-                            const patch = { showSignature: e.target.checked };
-                            if (!e.target.checked) {
-                              patch.farmerSig = "";
-                              patch.transportSig = "";
-                            }
-                            patchSet(active.id, patch);
-                          }}
-                          style={{ margin: 0 }}
-                        />
-                        ต้องการแนบลายเซ็นในใบชั่งนี้
-                      </label>
-
-                      {active.showSignature && (
-                        <div className="fw-grid2" style={{ marginTop: 16 }}>
-                          <SignaturePad label="ลายเซ็นเกษตรกร" value={active.farmerSig} onChange={(val) => patchSet(active.id, { farmerSig: val })} />
-                          <SignaturePad label="ลายเซ็นขนส่ง" value={active.transportSig} onChange={(val) => patchSet(active.id, { transportSig: val })} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="fw-card">
-                <p className="fw-card-title">หมายเหตุ</p>
-                <div className="fw-field"><textarea value={note || ""} onChange={(e) => update({ note: e.target.value })} placeholder="กรอกหมายเหตุเพิ่มเติม..." /></div>
-              </div>
-
-              <button className="fw-btn-primary" onClick={saveRecord}><IconSave size={20} /> บันทึกข้อมูลใบชั่ง</button>
-              <button className="fw-btn-secondary" onClick={resetForm}><IconRefreshCcw size={14} /> เคลียร์ข้อมูลทิ้ง / เริ่มใหม่</button>
-              
-            </div>
-          )}
-
-          {mainTab !== 'home' && (
-            <div className="fw-summary-bar">
-              <div className="fw-summary-item"><div className="fw-summary-label">น้ำหนักสุทธิรวม</div><div className="fw-summary-value">{fmt(grandNetKg)} กก.</div></div>
-              <div className="fw-summary-item"><div className="fw-summary-label">จำนวนตัวรวม</div><div className="fw-summary-value">{fmt(grandFishCount, 0)} ตัว</div></div>
-              <div className="fw-summary-item"><div className="fw-summary-label">ถังรวม</div><div className="fw-summary-value" style={{ color: '#fff' }}>{grandBuckets} ถัง</div></div>
-            </div>
-          )}
-          
-        </div>
-      );
+  return sheet;
+}
+
+function getKvSheet() {
+  return getOrCreateSheet(KV_SHEET_NAME, ["key", "value", "updatedAt"]);
+}
+
+function kvGet(key) {
+  const sheet = getKvSheet();
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === key) return data[i][1];
+  }
+  return null;
+}
+
+function kvList(prefix) {
+  const sheet = getKvSheet();
+  const data = sheet.getDataRange().getValues();
+  const items = {};
+  for (let i = 1; i < data.length; i++) {
+    const k = String(data[i][0]);
+    if (!prefix || k.indexOf(prefix) === 0) items[k] = data[i][1];
+  }
+  return items;
+}
+
+function kvSet(key, value) {
+  const sheet = getKvSheet();
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === key) {
+      sheet.getRange(i + 1, 2).setValue(value);
+      sheet.getRange(i + 1, 3).setValue(new Date());
+      return;
     }
+  }
+  sheet.appendRow([key, value, new Date()]);
+}
 
-    function AppWrapper() {
-      const [isAuth, setIsAuth] = useState(false);
-      const [pin, setPin] = useState("");
-      const [error, setError] = useState("");
+function kvDelete(key) {
+  const sheet = getKvSheet();
+  const data = sheet.getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][0]) === key) {
+      sheet.deleteRow(i + 1);
+      return;
+    }
+  }
+}
 
-      useEffect(() => {
-        if (sessionStorage.getItem("farm_auth") === "888") setIsAuth(true);
-      }, []);
+function appendReportRows(rows) {
+  const sheet = getOrCreateSheet(REPORT_SHEET_NAME, [
+    "วันที่", "เวลา", "สาขา", "บ่อ/กระชัง", "รุ่น", "ขนส่ง", "ทะเบียน",
+    "จำนวนถัง", "นน.รวม", "หักน้ำ", "นน.สุทธิ", "ไซส์(กรัม)", "จำนวนตัว", "หมายเหตุ"
+  ]);
+  rows.forEach(function (r) {
+    sheet.appendRow([
+      r.dateStr, r.timeStr, r.branch, r.pond, r.batch, r.transport, r.plate,
+      r.bucketCount, r.grossKg, r.waterDeducted, r.netKg, r.sizeGram, r.fishCount, r.note
+    ]);
+  });
+}
 
-      const handleLogin = () => {
-        if (pin === "888") { setIsAuth(true); sessionStorage.setItem("farm_auth", "888"); } 
-        else { setError("รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่"); setPin(""); }
-      };
+function appendMortalityRows(rows) {
+  const sheet = getOrCreateSheet(MORTALITY_SHEET_NAME, [
+    "วันที่", "เวลา", "บ่อ/กระชัง", "รุ่น", "จำนวนปลาตาย(ตัว)", "หมายเหตุ"
+  ]);
+  rows.forEach(function (r) {
+    sheet.appendRow([
+      r.dateStr, r.timeStr, r.pond, r.batch, r.deadCount, r.note
+    ]);
+  });
+}
 
-      if (!isAuth) {
-        return (
-          <div className="fw-root" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px', "--teal": "#090909", "--teal-dark": "#0A443C", "--teal-light": "#7EAE53", "--teal-pale": "#E8F4DA", "--bg": "#F4F8F6" }}>
-             <style>{`.fw-root * { box-sizing: border-box; } .fw-root { font-family: 'Sarabun', -apple-system, sans-serif; background: var(--bg); color: #16302B; max-width: 480px; margin: 0 auto; } .pin-input { width: 100%; max-width: 250px; padding: 12px; font-size: 28px; text-align: center; border: 2px solid var(--teal-light); border-radius: 12px; margin-bottom: 16px; letter-spacing: 8px; color: var(--teal-dark); background: #fff;} .pin-input:focus { outline: none; box-shadow: 0 0 0 3px var(--teal-pale); } .pin-btn { background: var(--teal-dark); color: #fff; border: none; padding: 14px 32px; font-size: 18px; font-weight: 700; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 6px rgba(10,68,60,0.2); transition: all 0.2s; display: flex; align-items: center; gap: 8px; } .pin-btn:active { transform: translateY(2px); }`}</style>
-             <img src="farm-logo.jpg" alt="Boonchai Logo" style={{ width: '180px', borderRadius: '16px', marginBottom: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-             <h2 style={{ color: 'var(--teal-dark)', margin: '0 0 8px 0', fontSize: '24px' }}>เข้าสู่ระบบ</h2>
-             <p style={{ color: '#5C7570', marginBottom: '24px', fontSize: '15px' }}>กรุณากรอกรหัส PIN ก่อนเข้าใช้งาน</p>
-             <input type="password" inputMode="numeric" className="pin-input" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="***" onKeyDown={(e) => e.key === 'Enter' && handleLogin()} />
-             {error && <p style={{ color: '#C1553D', marginTop: '0', marginBottom: '16px', fontSize: '14px', fontWeight: 600 }}>{error}</p>}
-             <button className="pin-btn" onClick={handleLogin}><IconLock size={20} /> เข้าสู่ระบบ</button>
-          </div>
-        );
+function doGet(e) {
+  try {
+    const action = e.parameter.action;
+    if (action === "get") {
+      const value = kvGet(e.parameter.key);
+      return jsonOutput({ value: value === null ? null : value });
+    }
+    if (action === "list") {
+      const items = kvList(e.parameter.prefix || "");
+      return jsonOutput({ items: items });
+    }
+    return jsonOutput({ error: "unknown action" });
+  } catch (err) {
+    return jsonOutput({ error: String(err) });
+  }
+}
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    if (body.rows) {
+      if (body.type === "mortality") {
+        appendMortalityRows(body.rows);
+      } else {
+        appendReportRows(body.rows);
       }
-      return <FishWeighingApp />;
     }
+    if (body.action === "set") {
+      kvSet(body.key, body.value);
+    } else if (body.action === "delete") {
+      kvDelete(body.key);
+    }
+    return jsonOutput({ ok: true });
+  } catch (err) {
+    return jsonOutput({ ok: false, error: String(err) });
+  }
+}
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<AppWrapper />);
-  </script>
-</body>
-</html>
+function jsonOutput(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
