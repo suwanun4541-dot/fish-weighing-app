@@ -19,13 +19,15 @@
 
     @media print {
       body * { visibility: hidden; }
-      .fw-print-sheet, .fw-print-sheet * { visibility: visible; }
+      .fw-print-sheet, .fw-print-sheet * { visibility: visible !important; }
       .fw-print-sheet {
         position: absolute; left: 0; top: 0; width: 100% !important; max-width: 100% !important;
-        margin: 0 !important; padding: 20px !important; box-shadow: none !important;
+        margin: 0 !important; padding: 10px !important; box-shadow: none !important;
         border: none !important; background: #fff !important;
       }
       .no-print { display: none !important; }
+      /* บังคับพิมพ์สีพื้นหลัง */
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
   </style>
 </head>
@@ -47,7 +49,7 @@
     const IconPrinter = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>;
     const IconArrowRight = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>;
     const IconArrowLeft = ({size=18}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
-    const IconFish = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.46-3.44 6-7 6-3.56 0-7.56-2.54-8.5-6Z"></path><path d="M18 12v.01"></path><path d="M11.5 10.5c-1 0-2 1-2 2s1 2 2 2"></path><path d="M6.5 12c-2.3 0-3.5-1-4.5-2C1 9 1 7 1 7s2 0 3 1c1 1 2.2 2 2.5 4Z"></path><path d="M6.5 12c-2.3 0-3.5 1-4.5 2C1 15 1 17 1 17s2 0 3-1c1-1 2.2-2 2.5-4Z"></path></svg>;
+    const IconFish = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.46-3.44 6-7 6-3.56 0-7.56-2.54-8.5-6Z"></path><path d="M18 12v.01"></path><path d="M11.5 10.5c-1 0-2 1-2 2s1 2 2 2"></path><path d="M6.5 12c-2.3 0-3.5 1-4.5-2C1 9 1 7 1 7s2 0 3 1c1 1 2.2 2 2.5 4Z"></path><path d="M6.5 12c-2.3 0-3.5 1-4.5 2C1 15 1 17 1 17s2 0 3-1c1-1 2.2-2 2.5-4Z"></path></svg>;
     const IconBook = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path><path d="M8 7h6"></path><path d="M8 11h8"></path></svg>;
     const IconLock = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
     const IconSkull = ({size=18, color="currentColor"}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"></circle><circle cx="15" cy="12" r="1"></circle><path d="M8 20v2h8v-2"></path><path d="M12.5 17l-.5-1-.5 1h1z"></path><path d="M6 20c-1.5-1.5-3-4-3-8a9 9 0 0 1 18 0c0 4-1.5 6.5-3 8"></path></svg>;
@@ -57,39 +59,39 @@
     // -----------------------------------------------------------------------------
     const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbwFI0rr2UjhYey67NiXR9K_1NAihlmQjwUkXl_pCJbVMoQfxtSijhEhGGmFszyr1oki/exec"; 
 
-  const storage = {
-    get: async (key) => {
-      try {
-        const res = await fetch(`${GOOGLE_SHEET_API_URL}?action=get&key=${encodeURIComponent(key)}`);
-        const data = await res.json();
-        return { value: data.value };
-      } catch (e) {
-        return { value: localStorage.getItem(key) };
+    const storage = {
+      get: async (key) => {
+        try {
+          const res = await fetch(`${GOOGLE_SHEET_API_URL}?action=get&key=${encodeURIComponent(key)}`);
+          const data = await res.json();
+          return { value: data.value };
+        } catch (e) {
+          return { value: localStorage.getItem(key) };
+        }
+      },
+      set: async (key, value) => {
+        localStorage.setItem(key, value);
+        try {
+          await fetch(GOOGLE_SHEET_API_URL, {
+            method: 'POST',
+            mode: 'no-cors', // ป้องกันเบราว์เซอร์บล็อก
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'set', key, value })
+          });
+        } catch (e) {}
+      },
+      delete: async (key) => {
+        localStorage.removeItem(key);
+        try {
+          await fetch(GOOGLE_SHEET_API_URL, {
+            method: 'POST',
+            mode: 'no-cors', // ป้องกันเบราว์เซอร์บล็อก
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'delete', key })
+          });
+        } catch (e) {}
       }
-    },
-    set: async (key, value) => {
-      localStorage.setItem(key, value);
-      try {
-        await fetch(GOOGLE_SHEET_API_URL, {
-          method: 'POST',
-          mode: 'no-cors', // ป้องกันเบราว์เซอร์บล็อก
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'set', key, value })
-        });
-      } catch (e) {}
-    },
-    delete: async (key) => {
-      localStorage.removeItem(key);
-      try {
-        await fetch(GOOGLE_SHEET_API_URL, {
-          method: 'POST',
-          mode: 'no-cors', // ป้องกันเบราว์เซอร์บล็อก
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'delete', key })
-        });
-      } catch (e) {}
-    }
-  };
+    };
 
     const THAI_MONTHS = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
     const uid = () => Math.random().toString(36).slice(2, 9);
@@ -264,16 +266,14 @@
         return () => clearTimeout(saveTimer.current);
       }, [state, loaded]);
 
-      // โหลดประวัติทั้งหมด (ชั่งปลา + ปลาตาย)
+      // โหลดประวัติทั้งหมด
       const loadRecords = useCallback(async () => {
-        // ประวัติชั่งปลา
         try {
           const idx = await storage.get("records:index");
           const list = idx && idx.value ? JSON.parse(idx.value) : [];
           setRecords(list.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0)));
         } catch (e) { setRecords([]); }
         
-        // ประวัติปลาตาย
         try {
           const mIdx = await storage.get("mortality:records:index");
           const mList = mIdx && mIdx.value ? JSON.parse(mIdx.value) : [];
@@ -423,6 +423,7 @@
             g.totalFish = g.sets.reduce((sum, s) => sum + s.fishCount, 0);
             g.totalGross = g.sets.reduce((sum, s) => sum + s.grossKg, 0);
             g.totalBuckets = g.sets.reduce((sum, s) => sum + s.bucketCount, 0);
+            g.totalWater = g.sets.reduce((sum, s) => sum + s.waterDeducted, 0);
         });
 
         return groups;
@@ -455,6 +456,9 @@
         });
         const transportInfo = Array.from(transportSet).join(', ');
 
+        // หาจำนวนถังที่เยอะที่สุดในบรรดาชุดที่เลือก เพื่อสร้างกริดให้เท่ากัน
+        const maxBuckets = Math.max(...sortedSelected.map(s => s.buckets.filter(b => num(b.weight) > 0).length), 20);
+
         setViewReport({
             dateStr: group.dateStr,
             farm: selected[0].farm || group.farm,
@@ -463,7 +467,8 @@
             totalGross, totalNet, totalFish, totalBuckets, totalWater,
             farmerSig: selected.find(s => s.farmerSig)?.farmerSig || "",
             transportSig: selected.find(s => s.transportSig)?.transportSig || "",
-            slipLabel, transportInfo
+            slipLabel, transportInfo,
+            maxBuckets
         });
       };
 
@@ -627,20 +632,25 @@
             .fw-checkbox:checked { background-color: var(--teal-light); }
             .fw-checkbox:checked::after { content: ''; position: absolute; left: 6px; top: 2px; width: 4px; height: 10px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 
+            /* โค้ดสำหรับจัดตารางหน้าพิมพ์ใบชั่งแบบแยกชุด */
             .fw-report-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; padding: 16px 8px; }
-            .fw-print-sheet { background: #fff; width: 100%; max-width: 700px; border-radius: 12px; padding: 24px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); color: #111; font-size: 13.5px; }
-            .fw-print-table { width: 100%; border-collapse: collapse; margin-top: 12px; margin-bottom: 14px; }
-            .fw-print-table th, .fw-print-table td { border: 1px solid #ddd; padding: 8px 6px; text-align: center; font-size: 12.5px; vertical-align: middle; }
-            .fw-print-table th { background-color: var(--teal-pale); font-weight: 700; color: var(--teal-dark); }
-            .fw-print-sigbox { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; text-align: center; }
-            .fw-print-sigline { border-bottom: 1px dashed #666; margin: 0 auto 8px; width: 80%; }
-            .fw-print-sig-container { position: relative; height: 65px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 4px; }
-            .fw-print-sig-img { position: absolute; bottom: 5px; height: 75px; object-fit: contain; }
+            .fw-print-sheet { background: #fff; width: 100%; max-width: 1000px; border-radius: 12px; padding: 24px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); color: #111; font-family: 'Sarabun', sans-serif; }
+            .pr-col-container { display: flex; width: 100%; border: 2px solid #000; flex-wrap: nowrap; }
+            .pr-col { flex: 1; min-width: 200px; display: flex; flexDirection: column; }
+            .pr-col:not(:first-child) { border-left: 1px solid #000; }
+            .pr-dark-head { background: #0A443C !important; color: #fff !important; text-align: center; padding: 6px; font-weight: bold; font-size: 14px; border-bottom: 1px solid #000; }
+            .pr-light-head { background: #dce8cd !important; color: #0A443C !important; text-align: center; padding: 6px; font-weight: bold; font-size: 14px; border-bottom: 1px solid #000; border-top: 1px solid #000; }
+            .pr-row { display: flex; justify-content: space-between; padding: 4px 10px; font-size: 13px; border-bottom: 1px dotted #ccc; }
+            .pr-row.bg-alt { background-color: #f9f9f9 !important; }
+            .pr-bucket-head { display: flex; background: #eef2e6 !important; border-bottom: 1px solid #ccc; font-size: 12.5px; font-weight: bold; padding: 6px 0; border-top: 1px solid #000;}
+            .pr-bucket-head > div { flex: 1; text-align: center; }
+            .pr-bucket-row { display: flex; font-size: 13px; padding: 4px 0; border-bottom: 1px dotted #ccc; }
+            .pr-bucket-row.bg-alt { background-color: #f4f4f4 !important; }
+            .pr-bucket-row > div { flex: 1; text-align: center; }
+            .pr-sum-row { display: flex; font-size: 13px; font-weight: bold; padding: 6px 0; background: #eef2e6 !important; border-top: 1px solid #000; }
+            .pr-sum-row > div { flex: 1; text-align: center; color: #0A443C !important; }
+            .pr-grand-row { background: #c2d6b3 !important; display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; font-weight: bold; font-size: 14px; border-top: 2px solid #000; color: #0A443C !important; }
             
-            .fw-bucket-detail-box {
-               background: #fdfdfd; border: 1px solid #ddd; border-radius: 8px; padding: 12px 14px; margin-top: 16px;
-            }
-
             /* Styles เพิ่มเติมสำหรับส่วนปลาตาย */
             .fw-dead-input { font-size: 26px !important; font-weight: 700; text-align: center; color: var(--danger) !important; }
             .fw-today-box { background: var(--amber-pale); border: 1px solid #f0d9ad; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
@@ -653,7 +663,7 @@
 
           {status && <div className="fw-toast">{status}</div>}
 
-          {/* Modal: ใบสรุปรายงานสำหรับพิมพ์ / บันทึก PDF (ชั่งปลา) */}
+          {/* Modal: ใบสรุปรายงานแบบตารางแยกชุด (เหมือนรูปต้นฉบับเป๊ะ) */}
           {viewReport && (
             <div className="fw-report-overlay" onClick={() => setViewReport(null)}>
               <div className="fw-print-sheet" onClick={(e) => e.stopPropagation()}>
@@ -666,110 +676,102 @@
                   </button>
                 </div>
                 
-                <div style={{ textAlign: 'center', borderBottom: '2px solid var(--teal-dark)', paddingBottom: 10, position: 'relative' }}>
-                  <img src="farm-logo.jpg" alt="Boonchai Group Logo" style={{ height: '70px', objectFit: 'contain', marginBottom: '8px' }} />
-                  <h2 style={{ margin: 0, fontSize: 20, color: '#0A443C' }}>ใบส่งมอบ / สรุปรายการชั่งลูกปลา</h2>
-                  <div style={{ fontSize: 14, fontWeight: 700, marginTop: 4 }}>เกษตรกร บูรณ์ชัยกรุ๊ป</div>
-                  {viewReport.farm && (
-                    <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>
-                      {viewReport.farm.address1} {viewReport.farm.address2} {viewReport.farm.branch ? `(สาขา: ${viewReport.farm.branch})` : ''}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 10, color: '#0E5C52', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <span>วันที่: {viewReport.dateStr}</span>
-                    <span style={{ fontSize: 13, color: 'var(--danger)', fontWeight: 700, background: 'var(--amber-pale)', padding: '2px 8px', borderRadius: 6 }}>
-                      ใบชั่งที่: {viewReport.slipLabel}
-                    </span>
-                  </div>
+                {/* ส่วนหัวของใบชั่ง */}
+                <div style={{ textAlign: 'center', position: 'relative', marginBottom: '16px' }}>
+                  <h2 style={{ margin: 0, fontSize: 22, color: '#000', paddingTop: '10px' }}>ใบส่งมอบ / สรุปรายการชั่งลูกปลา</h2>
+                  <div style={{ fontSize: 16, fontWeight: 700, marginTop: 4, color: '#000' }}>เกษตรกร {viewReport.farm?.address1 || "บูรณ์ชัยกรุ๊ป"}</div>
                 </div>
 
-                <table className="fw-print-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '10%' }}>ใบชั่งที่</th>
-                      <th style={{ width: '12%' }}>บ่อ/กระชัง</th>
-                      <th style={{ width: '10%' }}>รุ่น</th>
-                      <th style={{ width: '10%' }}>จำนวนถัง</th>
-                      <th style={{ width: '13%' }}>นน.รวม (กก.)</th>
-                      <th style={{ width: '10%' }}>หักน้ำ (กก.)</th>
-                      <th style={{ width: '13%' }}>นน.สุทธิ (กก.)</th>
-                      <th style={{ width: '10%' }}>ไซส์ (กรัม)</th>
-                      <th style={{ width: '12%' }}>จำนวนตัว</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {viewReport.sets.map((s, i) => {
-                      return (
-                        <tr key={i}>
-                          <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{String(s.slipNo).padStart(2, '0')}</td>
-                          <td style={{ fontWeight: 600 }}>{s.pond || "-"}</td>
-                          <td>{s.batch || "-"}</td>
-                          <td style={{ fontWeight: 700 }}>{s.bucketCount}</td>
-                          <td style={{ fontWeight: 600 }}>{fmt(s.grossKg)}</td>
-                          <td style={{ fontWeight: 600, color: 'var(--danger)' }}>{fmt(s.waterDeducted)}</td>
-                          <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{fmt(s.netKg)}</td>
-                          <td>{s.sizeGram ? fmt(s.sizeGram, 1) : '-'}</td>
-                          <td style={{ fontWeight: 700, color: 'var(--teal-dark)' }}>{fmt(s.fishCount, 0)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ background: '#E8F4DA', fontWeight: 700 }}>
-                      <td colSpan="3" style={{ textAlign: 'right', color: '#0A443C' }}>รวม:</td>
-                      <td style={{ color: '#0A443C', textAlign: 'center' }}>{viewReport.totalBuckets}</td>
-                      <td style={{ color: '#0A443C' }}>{fmt(viewReport.totalGross)}</td>
-                      <td style={{ color: '#C1553D' }}>{fmt(viewReport.totalWater)}</td>
-                      <td style={{ color: '#0A443C', fontSize: 14 }}>{fmt(viewReport.totalNet)}</td>
-                      <td>-</td>
-                      <td style={{ color: '#0A443C', fontSize: 14 }}>{fmt(viewReport.totalFish, 0)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px', fontSize: '13.5px', fontWeight: 700, color: '#000' }}>
+                  <div>วันที่: {viewReport.dateStr}</div>
+                  <div>รวมน้ำหนักทั้งหมด: {fmt(viewReport.totalNet)} กก. &nbsp;&nbsp;&nbsp; รวมจำนวนตัวทั้งหมด: {fmt(viewReport.totalFish, 0)} ตัว</div>
+                  <div style={{ background: '#f5e6cc', padding: '4px 10px', border: '1px solid #d9b378', borderRadius: 4 }}>ใบชั่งที่: {viewReport.slipLabel}</div>
+                </div>
 
-                <div className="fw-bucket-detail-box">
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal-dark)', marginBottom: 8, borderBottom: '1px dashed #ccc', paddingBottom: 6 }}>
-                    รายละเอียดน้ำหนักแต่ละถัง (กก.)
-                  </div>
-                  {viewReport.sets.map((s, i) => {
-                    const validBuckets = (s.buckets || []).filter(b => num(b.weight) > 0).map(b => b.weight);
-                    if (validBuckets.length === 0) return null;
-                    return (
-                      <div key={i} style={{ fontSize: 12.5, marginBottom: 6, lineHeight: 1.6 }}>
-                        <strong style={{ color: 'var(--teal-dark)' }}>ใบชั่งที่ {String(s.slipNo).padStart(2, '0')}:</strong> {validBuckets.join(', ')} 
-                        <span style={{ color: 'var(--ink-soft)', marginLeft: 6 }}>(รวม {s.bucketCount} ถัง)</span>
+                {/* ตารางแสดงผลแยกแต่ละชุดชั่ง (แบบดั้งเดิม) */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div className="pr-col-container">
+                    {viewReport.sets.map((s, idx) => (
+                      <div key={s.id} className="pr-col">
+                        {/* Header 1 */}
+                        <div className="pr-dark-head">ชุดชั่งที่ {String(s.slipNo).padStart(2, '0')}</div>
+                        
+                        {/* Info Rows */}
+                        <div className="pr-row bg-alt"><span>บ่อ</span><span style={{fontWeight: 'bold'}}>{s.pond || "-"}</span></div>
+                        <div className="pr-row"><span>ขนาด(กรัม)</span><span style={{fontWeight: 'bold'}}>{s.sizeGram ? fmt(s.sizeGram, 1) : '-'}</span></div>
+                        <div className="pr-row bg-alt"><span>จำนวนตัว</span><span style={{fontWeight: 'bold'}}>{fmt(s.fishCount, 0)}</span></div>
+
+                        {/* Header 2 */}
+                        <div className="pr-dark-head" style={{borderTop: '1px solid #000'}}>ชุดการชั่ง {String(s.slipNo).padStart(2, '0')}</div>
+                        <div className="pr-bucket-head">
+                          <div>ลำดับถัง</div>
+                          <div>น้ำหนัก (กก.)</div>
+                        </div>
+
+                        {/* Buckets List */}
+                        {Array.from({ length: viewReport.maxBuckets }).map((_, bIdx) => {
+                          const validBuckets = (s.buckets || []).filter(b => num(b.weight) > 0);
+                          const bucket = validBuckets[bIdx];
+                          return (
+                            <div key={bIdx} className={`pr-bucket-row ${bIdx % 2 === 0 ? '' : 'bg-alt'}`}>
+                              <div style={{fontWeight: 'bold'}}>{bIdx + 1}</div>
+                              <div>{bucket ? fmt(bucket.weight) : ''}</div>
+                            </div>
+                          )
+                        })}
+
+                        {/* Gross Sum */}
+                        <div className="pr-sum-row">
+                          <div>รวม</div>
+                          <div>{fmt(s.grossKg)}</div>
+                        </div>
+
+                        {/* Summary Header 3 */}
+                        <div className="pr-light-head">สรุปผลชุดที่ {String(s.slipNo).padStart(2, '0')}</div>
+                        <div className="pr-row"><span>บ่อ</span><span style={{fontWeight: 'bold'}}>{s.pond || "-"}</span></div>
+                        <div className="pr-row bg-alt"><span>นน.ทั้งหมด</span><span style={{fontWeight: 'bold'}}>{fmt(s.grossKg)}</span></div>
+                        <div className="pr-row"><span>จำนวนถัง</span><span style={{fontWeight: 'bold'}}>{s.bucketCount}</span></div>
+                        <div className="pr-row bg-alt"><span>หักน้ำ</span><span style={{fontWeight: 'bold'}}>{fmt(s.waterDeducted)}</span></div>
+                        <div className="pr-row"><span>นน.สุทธิ</span><span style={{fontWeight: 'bold'}}>{fmt(s.netKg)}</span></div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
+
+                  {/* Grand Total Bar */}
+                  <div className="pr-grand-row">
+                    <div>รวมทุกชุด: {viewReport.totalBuckets} ถัง</div>
+                    <div>น้ำหนักรวม {fmt(viewReport.totalGross)} กก.</div>
+                    <div>หักน้ำ {fmt(viewReport.totalWater)} กก.</div>
+                    <div>สุทธิ {fmt(viewReport.totalNet)} กก.</div>
+                    <div>{fmt(viewReport.totalFish, 0)} ตัว</div>
+                  </div>
                 </div>
 
                 {viewReport.note && (
-                  <div style={{ background: '#fafafa', border: '1px solid #eee', borderRadius: 6, padding: '8px 10px', fontSize: 12, marginTop: 16 }}>
+                  <div style={{ background: '#fafafa', border: '1px solid #eee', borderRadius: 6, padding: '8px 10px', fontSize: 13, marginTop: 16 }}>
                     <strong>หมายเหตุ:</strong> {viewReport.note}
                   </div>
                 )}
                 
-                <div className="fw-print-sigbox">
-                  <div>
-                    <div className="fw-print-sig-container">
-                      {viewReport.farmerSig && <img src={viewReport.farmerSig} className="fw-print-sig-img" />}
-                      <div className="fw-print-sigline"></div>
-                    </div>
-                    <div style={{ fontSize: 12.5, fontWeight: 600 }}>ลงชื่อ {viewReport.farmerSig ? '' : '....................................................'}</div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>( เกษตรกรผู้ส่งมอบ )</div>
-                  </div>
-                  <div>
-                    <div style={{ color: '#C1553D', fontSize: '11px', fontWeight: 600, marginBottom: '4px', minHeight: '16px' }}>
-                      {viewReport.transportInfo ? `รถขนส่ง: ${viewReport.transportInfo}` : ''}
-                    </div>
-                    <div className="fw-print-sig-container" style={{ height: '45px' }}>
-                      {viewReport.transportSig && <img src={viewReport.transportSig} className="fw-print-sig-img" />}
-                      <div className="fw-print-sigline"></div>
-                    </div>
-                    <div style={{ fontSize: 12.5, fontWeight: 600 }}>ลงชื่อ {viewReport.transportSig ? '' : '....................................................'}</div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>( พนักงานขับรถ / ขนส่ง )</div>
-                  </div>
+                {/* ส่วนของลายเซ็นด้านล่าง */}
+                <div style={{ marginTop: '20px', fontSize: '12px', fontWeight: 'bold', textAlign: 'center', color: '#000' }}>
+                   {viewReport.transportInfo && <div>รถขนส่ง: {viewReport.transportInfo}</div>}
                 </div>
+                <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '45px', fontSize: '13px', fontWeight: 'bold', textAlign: 'center', color: '#000' }}>
+                   <div style={{ position: 'relative', width: '250px' }}>
+                      {viewReport.farmerSig && <img src={viewReport.farmerSig} style={{ position: 'absolute', bottom: '25px', left: '50%', transform: 'translateX(-50%)', height: '65px' }} />}
+                      <div style={{ borderBottom: '1px dashed #000', margin: '0 auto 8px', width: '80%' }}></div>
+                      <div>ลงชื่อ ......................................................</div>
+                      <div style={{ marginTop: '6px' }}>( เกษตรกรผู้ส่งมอบ )</div>
+                   </div>
+                   <div style={{ position: 'relative', width: '250px' }}>
+                      {viewReport.transportSig && <img src={viewReport.transportSig} style={{ position: 'absolute', bottom: '25px', left: '50%', transform: 'translateX(-50%)', height: '65px' }} />}
+                      <div style={{ borderBottom: '1px dashed #000', margin: '0 auto 8px', width: '80%' }}></div>
+                      <div>ลงชื่อ ......................................................</div>
+                      <div style={{ marginTop: '6px' }}>( พนักงานขับรถ / ขนส่ง )</div>
+                   </div>
+                </div>
+
               </div>
             </div>
           )}
