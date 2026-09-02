@@ -1144,8 +1144,8 @@
               <div className="fw-card">
                 <p className="fw-card-title">คำนวณน้ำหนักตัวปลาเฉลี่ย</p>
                 <div className="fw-grid2">
-                  <div className="fw-field"><label>นับได้ (ตัว)</label><input value={sample.counted} onChange={(e) => updateSample({ counted: e.target.value })} inputMode="numeric" placeholder="ตัวอย่าง: 128" /></div>
                   <div className="fw-field"><label>ชั่งได้ ก่อนหักน้ำ (กิโล)</label><input value={sample.weighedKg} onChange={(e) => updateSample({ weighedKg: e.target.value })} inputMode="decimal" placeholder="ตัวอย่าง: 10" /></div>
+                  <div className="fw-field"><label>นับได้ (ตัว)</label><input value={sample.counted} onChange={(e) => updateSample({ counted: e.target.value })} inputMode="numeric" placeholder="ตัวอย่าง: 128" /></div>
                 </div>
                 <div className="fw-field" style={{ maxWidth: 150 }}>
                   <label>หักน้ำ (กก.)</label>
@@ -1158,6 +1158,12 @@
                 <p className="fw-note" style={{ textAlign: 'center', marginTop: 12 }}>
                   (หักน้ำ {fmt(waterPerBucketKg)} กก. ออกจากน้ำหนักที่ชั่งได้ก่อนคำนวณ)
                 </p>
+                <div style={{ background: 'var(--teal-pale)', border: '1px solid rgba(126, 174, 83, 0.3)', borderRadius: 10, padding: '10px 12px', marginTop: 14 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--teal-dark)', marginBottom: 4 }}>วิธีสุ่ม</div>
+                  <p style={{ fontSize: 12, color: 'var(--teal-dark)', lineHeight: 1.5, margin: 0 }}>
+                    ชั่งน้ำในถังให้ได้ {fmt(waterPerBucketKg)} กก. ก่อน แล้วตักปลาใส่ จากนั้นชั่งน้ำหนักรวม นำน้ำหนักรวมมากรอกในช่อง "ชั่งได้ ก่อนหักน้ำ" ด้านบน ระบบจะหักน้ำออกให้อัตโนมัติ
+                  </p>
+                </div>
               </div>
               
               <button 
