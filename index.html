@@ -211,6 +211,7 @@
       const [mortalityEntry, setMortalityEntry] = useState(emptyMortalityEntry());
       const [mortalityRecords, setMortalityRecords] = useState([]);
       const [filterPond, setFilterPond] = useState("");
+      const [viewMortalityReport, setViewMortalityReport] = useState(null);
       
       // States รวมระบบ
       const [mainTab, setMainTab] = useState('home'); // 'home', 'sample', 'weighing', 'mortality'
@@ -562,6 +563,34 @@
         return Array.from(map.entries());
       }, [mortalityRecords, filterPond]);
 
+      // สรุปปลาตายแยกตามวันที่ + บ่อ/รุ่น สำหรับหน้าปริ้น
+      const mortalitySummaryByDate = useMemo(() => {
+        const dateMap = new Map();
+        mortalityRecords.forEach(r => {
+          if (!dateMap.has(r.dateStr)) {
+            dateMap.set(r.dateStr, { dateStr: r.dateStr, savedAt: r.savedAt, groups: new Map() });
+          }
+          const dayEntry = dateMap.get(r.dateStr);
+          if (r.savedAt > dayEntry.savedAt) dayEntry.savedAt = r.savedAt;
+          const groupKey = `${r.pond || "-"}|${r.batch || "-"}`;
+          if (!dayEntry.groups.has(groupKey)) {
+            dayEntry.groups.set(groupKey, { pond: r.pond || "-", batch: r.batch || "-", deadCount: 0, notes: [] });
+          }
+          const g = dayEntry.groups.get(groupKey);
+          g.deadCount += num(r.deadCount);
+          if (r.note) g.notes.push(r.note);
+        });
+
+        const days = Array.from(dateMap.values()).map(d => {
+          const groups = Array.from(d.groups.values()).sort((a, b) => a.pond.localeCompare(b.pond, 'th'));
+          const totalDead = groups.reduce((s, g) => s + g.deadCount, 0);
+          return { dateStr: d.dateStr, savedAt: d.savedAt, groups, totalDead };
+        });
+
+        days.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+        return days;
+      }, [mortalityRecords]);
+
 
       const active = sets[activeIdx] || sets[0];
       const activeCalc = active ? calcSet(active, waterPerBucketKg, deductPercent) : null;
@@ -636,7 +665,7 @@
             .fw-report-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; padding: 16px 8px; }
             .fw-print-sheet { background: #fff; width: 100%; max-width: 1000px; border-radius: 12px; padding: 24px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); color: #111; font-family: 'Sarabun', sans-serif; }
             .pr-col-container { display: flex; width: 100%; border: 2px solid #000; flex-wrap: nowrap; }
-            .pr-col { flex: 1; min-width: 200px; display: flex; flexDirection: column; }
+            .pr-col { flex: 1; min-width: 200px; display: flex; flex-direction: column; }
             .pr-col:not(:first-child) { border-left: 1px solid #000; }
             .pr-dark-head { background: #0A443C !important; color: #fff !important; text-align: center; padding: 6px; font-weight: bold; font-size: 14px; border-bottom: 1px solid #000; }
             .pr-light-head { background: #dce8cd !important; color: #0A443C !important; text-align: center; padding: 6px; font-weight: bold; font-size: 14px; border-bottom: 1px solid #000; border-top: 1px solid #000; }
@@ -659,9 +688,99 @@
             .fw-date-group { margin-bottom: 16px; }
             .fw-date-title { font-size: 13.5px; font-weight: 700; color: var(--teal-dark); background: var(--teal-pale); padding: 6px 10px; border-radius: 8px; margin-bottom: 6px; display: flex; justify-content: space-between; }
             .fw-record-dead { font-weight: 700; font-size: 16px; color: var(--danger); flex: none; }
+
+            /* โค้ดสำหรับสรุปปลาตายรายวัน/รุ่น */
+            .mr-print-sheet { background: #fff; width: 100%; max-width: 700px; border-radius: 12px; padding: 24px 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); color: #111; font-family: 'Sarabun', sans-serif; }
+            .mr-table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+            .mr-table th { background: #C1553D !important; color: #fff !important; text-align: center; padding: 8px 6px; font-size: 13.5px; border: 1px solid #a8462f; }
+            .mr-table td { padding: 7px 8px; font-size: 13.5px; border: 1px solid #eadfd7; text-align: center; }
+            .mr-table tr:nth-child(even) td { background: #fdf5ef !important; }
+            .mr-table td.mr-pond-cell { text-align: left; font-weight: 600; }
+            .mr-grand-row td { background: #FBEBD3 !important; font-weight: bold; color: #8a5b12 !important; border-top: 2px solid #C1553D; }
           `}</style>
 
           {status && <div className="fw-toast">{status}</div>}
+
+          {/* Modal: สรุปปลาตายแยกวัน/รุ่น สำหรับพิมพ์ */}
+          {viewMortalityReport && (
+            <div className="fw-report-overlay" onClick={() => setViewMortalityReport(null)}>
+              <div className="fw-print-sheet mr-print-sheet" onClick={(e) => e.stopPropagation()}>
+                <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, borderBottom: '1px solid #eee', paddingBottom: 10 }}>
+                  <button onClick={() => window.print()} style={{ background: 'var(--danger)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <IconPrinter size={16} /> สั่งพิมพ์ / บันทึกเป็น PDF
+                  </button>
+                  <button onClick={() => setViewMortalityReport(null)} style={{ background: '#f1f1f1', border: 'none', padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+                    ปิด
+                  </button>
+                </div>
+
+                <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                  <h2 style={{ margin: 0, fontSize: 21, color: '#000' }}>สรุปรายงานปลาตาย</h2>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginTop: 4, color: '#000' }}>บูรณ์ชัยกรุ๊ป</div>
+                </div>
+
+                {viewMortalityReport.mode === 'all' ? (
+                  viewMortalityReport.days.map((day) => (
+                    <div key={day.dateStr} style={{ marginBottom: 20 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#C1553D', padding: '6px 0', borderBottom: '2px solid #C1553D' }}>วันที่ {day.dateStr}</div>
+                      <table className="mr-table">
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left' }}>บ่อ / กระชัง</th>
+                            <th>รุ่น</th>
+                            <th>จำนวนปลาตาย (ตัว)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {day.groups.map((g, i) => (
+                            <tr key={i}>
+                              <td className="mr-pond-cell">{g.pond}</td>
+                              <td>{g.batch}</td>
+                              <td>{fmt(g.deadCount, 0)}</td>
+                            </tr>
+                          ))}
+                          <tr className="mr-grand-row">
+                            <td colSpan="2">รวมทั้งวัน</td>
+                            <td>{fmt(day.totalDead, 0)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  ))
+                ) : (
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#C1553D', padding: '6px 0', borderBottom: '2px solid #C1553D' }}>วันที่ {viewMortalityReport.day.dateStr}</div>
+                    <table className="mr-table">
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left' }}>บ่อ / กระชัง</th>
+                          <th>รุ่น</th>
+                          <th>จำนวนปลาตาย (ตัว)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {viewMortalityReport.day.groups.map((g, i) => (
+                          <tr key={i}>
+                            <td className="mr-pond-cell">{g.pond}</td>
+                            <td>{g.batch}</td>
+                            <td>{fmt(g.deadCount, 0)}</td>
+                          </tr>
+                        ))}
+                        <tr className="mr-grand-row">
+                          <td colSpan="2">รวมทั้งวัน</td>
+                          <td>{fmt(viewMortalityReport.day.totalDead, 0)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div style={{ marginTop: '20px', fontSize: '12px', textAlign: 'right', color: '#888' }}>
+                  พิมพ์เมื่อ {new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Modal: ใบสรุปรายงานแบบตารางแยกชุด (เหมือนรูปต้นฉบับเป๊ะ) */}
           {viewReport && (
@@ -815,6 +934,14 @@
                   </button>
                 </div>
 
+                <button
+                  onClick={() => { setViewMortalityReport({ mode: 'all', days: mortalitySummaryByDate }); }}
+                  disabled={mortalitySummaryByDate.length === 0}
+                  style={{ width: '100%', padding: '11px', borderRadius: 10, border: 'none', background: mortalitySummaryByDate.length ? 'var(--danger)' : '#ccc', color: '#fff', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: mortalitySummaryByDate.length ? 'pointer' : 'not-allowed', marginBottom: 14 }}
+                >
+                  <IconPrinter size={16} /> พิมพ์สรุปปลาตายทุกวัน
+                </button>
+
                 {pondOptions.length > 0 && (
                   <div className="fw-field" style={{ marginBottom: 14 }}>
                     <label>กรองตามบ่อ/กระชัง</label>
@@ -829,11 +956,23 @@
                   {groupedMortalityByDate.length === 0 && <p style={{ color: "var(--ink-soft)", fontSize: 13.5 }}>ยังไม่มีบันทึกปลาตาย</p>}
                   {groupedMortalityByDate.map(([dateStr, list]) => {
                     const dayTotal = list.reduce((s, r) => s + num(r.deadCount), 0);
+                    const daySummary = mortalitySummaryByDate.find(d => d.dateStr === dateStr);
                     return (
                       <div className="fw-date-group" key={dateStr}>
                         <div className="fw-date-title">
                           <span>วันที่ {dateStr}</span>
-                          <span>รวม {fmt(dayTotal, 0)} ตัว</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            รวม {fmt(dayTotal, 0)} ตัว
+                            {daySummary && (
+                              <button
+                                onClick={() => setViewMortalityReport({ mode: 'day', day: daySummary })}
+                                style={{ background: 'var(--danger)', border: 'none', color: '#fff', borderRadius: 6, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                aria-label="พิมพ์สรุปวันนี้"
+                              >
+                                <IconPrinter size={13} />
+                              </button>
+                            )}
+                          </span>
                         </div>
                         {list.map((r) => (
                           <div className="fw-record-row" key={r.key} style={{gap: 8}}>
@@ -952,6 +1091,7 @@
               </div>
               <div style={{ display: "flex", gap: 6 }}>
                 {mainTab === 'weighing' && <button className="fw-icon-btn" onClick={() => setShowDaily(true)} aria-label="สรุป"><IconClipboardList size={18} /></button>}
+                {mainTab === 'mortality' && <button className="fw-icon-btn" onClick={() => setViewMortalityReport({ mode: 'all', days: mortalitySummaryByDate })} aria-label="พิมพ์สรุป"><IconPrinter size={18} /></button>}
                 <button className="fw-icon-btn" onClick={() => {
                   if (mainTab === 'mortality') setShowMortalityHistory(true);
                   else setShowHistory(true);
@@ -1184,6 +1324,42 @@
                 </div>
 
                 <button className="fw-btn-primary" style={{ background: 'var(--danger)' }} onClick={saveMortalityRecord}><IconSave size={20} /> บันทึกปลาตาย</button>
+              </div>
+
+              <div className="fw-card">
+                <p className="fw-card-title"><IconClipboardList size={17} color="var(--teal-dark)" /> สรุปปลาตายรายวัน / รุ่น</p>
+                {mortalitySummaryByDate.length === 0 && <p style={{ color: "var(--ink-soft)", fontSize: 13.5 }}>ยังไม่มีข้อมูลปลาตาย</p>}
+                {mortalitySummaryByDate.slice(0, 5).map((day) => (
+                  <div key={day.dateStr} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--teal-dark)' }}>วันที่ {day.dateStr}</span>
+                      <button
+                        onClick={() => setViewMortalityReport({ mode: 'day', day })}
+                        style={{ background: 'var(--danger)', border: 'none', color: '#fff', borderRadius: 8, padding: '5px 10px', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+                      >
+                        <IconPrinter size={13} /> พิมพ์
+                      </button>
+                    </div>
+                    {day.groups.map((g, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--ink-soft)', padding: '3px 0' }}>
+                        <span>บ่อ {g.pond}{g.batch !== '-' ? ` รุ่น ${g.batch}` : ''}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--danger)' }}>{fmt(g.deadCount, 0)} ตัว</span>
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, color: 'var(--teal-dark)', marginTop: 4, paddingTop: 4, borderTop: '1px dashed var(--border)' }}>
+                      <span>รวมทั้งวัน</span>
+                      <span>{fmt(day.totalDead, 0)} ตัว</span>
+                    </div>
+                  </div>
+                ))}
+                {mortalitySummaryByDate.length > 0 && (
+                  <button
+                    onClick={() => setViewMortalityReport({ mode: 'all', days: mortalitySummaryByDate })}
+                    style={{ width: '100%', padding: '11px', borderRadius: 10, border: '1px solid var(--danger)', background: '#fff', color: 'var(--danger)', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', marginTop: 4 }}
+                  >
+                    <IconPrinter size={16} /> พิมพ์สรุปทุกวัน
+                  </button>
+                )}
               </div>
             </div>
           )}
