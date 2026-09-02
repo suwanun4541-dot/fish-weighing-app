@@ -475,7 +475,6 @@
 
       // --- ฟังก์ชันปลาตาย ---
       const saveMortalityRecord = async () => {
-        if (!mortalityEntry.pond) { setStatus("กรุณากรอกบ่อ/กระชัง"); setTimeout(() => setStatus(""), 1800); return; }
         if (num(mortalityEntry.deadCount) <= 0) { setStatus("กรุณากรอกจำนวนปลาตาย"); setTimeout(() => setStatus(""), 1800); return; }
 
         try {
